@@ -200,11 +200,11 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
         )}
       </div>
 
-      {order.notes && (
+      {order.comments && (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 10 }}>
           <FileText size={12} color="#bdbdbd" style={{ marginTop: 2 }} />
           <p style={{ fontSize: 12, color: '#757575', fontStyle: 'italic', lineHeight: 1.4 }}>
-            {order.notes.length > 60 ? order.notes.slice(0, 60) + '…' : order.notes}
+            {order.comments.length > 60 ? order.comments.slice(0, 60) + '…' : order.comments}
           </p>
         </div>
       )}
@@ -277,17 +277,34 @@ export default function OrdersPage() {
     if (!user) return
     setLoading(true)
     const supabase = createClient()
+    // Show all unclaimed pending orders (available for any tailor) + this tailor's own orders
     const { data } = await supabase
       .from('orders')
       .select('*')
-      .eq('tailor_id', user.id)
+      .or(`tailor_id.eq.${user.id},and(tailor_id.is.null,status.eq.pending)`)
       .order('created_at', { ascending: false })
     setOrders(data ?? [])
     setLoading(false)
   }
 
   useEffect(() => {
+    if (!user) return
     fetchOrders()
+
+    // Realtime: new orders come in live
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`tailor-orders:${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+      }, () => {
+        fetchOrders()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 

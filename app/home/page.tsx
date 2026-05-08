@@ -102,10 +102,11 @@ export default function HomePage() {
       setOrdersLoading(true)
       const supabase = createClient()
 
+      // Show: (1) all unclaimed pending orders, OR (2) orders this tailor has accepted
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('tailor_id', user.id)
+        .or(`tailor_id.eq.${user.id},and(tailor_id.is.null,status.eq.pending)`)
         .order('created_at', { ascending: false })
 
       if (!error && data) {

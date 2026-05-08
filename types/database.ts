@@ -15,20 +15,22 @@ export interface Order {
   order_number: string
   service_type: 'alterations' | 'from_scratch' | 'upcycling'
   garment_type: string
+  gender: 'male' | 'female' | null
   status: 'pending' | 'confirmed' | 'in_progress' | 'ready' | 'delivered' | 'cancelled'
   price: number | null
   tailor_price: number | null
   tailor_note: string | null
   decline_reason: string | null
-  notes: string | null
+  // Customer uses "comments" field for order notes
+  comments: string | null
   pickup_date: string | null
   pickup_time: string | null
-  delivery_address: string | null
+  pickup_address: string | null       // aligned with customer app
   measurement_id: string | null
   image_urls: string[] | null
   created_at: string
   updated_at: string | null
-  // joined
+  // joined fields (from select with profiles)
   customer_name?: string | null
   customer_phone?: string | null
 }
@@ -37,10 +39,10 @@ export interface ChatMessage {
   id: string
   order_id: string
   sender_id: string
+  sender_type: 'customer' | 'tailor'
+  sender_name: string | null
   message: string
   created_at: string
-  sender_name?: string | null
-  sender_role?: string | null
 }
 
 export interface Measurement {

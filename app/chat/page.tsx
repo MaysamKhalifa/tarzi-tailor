@@ -56,11 +56,12 @@ export default function ChatListPage() {
       setLoading(true)
       const supabase = createClient()
 
+      // Show accepted orders only (tailor_id = user.id)
       const { data: orders, error } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, profiles:user_id ( full_name )')
         .eq('tailor_id', user.id)
-        .order('updated_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
 
       if (error || !orders) {
         setLoading(false)
@@ -86,8 +87,16 @@ export default function ChatListPage() {
         })
       )
 
-      // Only show orders that have messages, but include all for discoverability
-      setConversations(items)
+      // Map joined customer name
+      const itemsWithName = items.map(item => ({
+        ...item,
+        order: {
+          ...item.order,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          customer_name: (item.order as any).profiles?.full_name ?? null,
+        }
+      }))
+      setConversations(itemsWithName)
       setLoading(false)
     }
 
@@ -217,7 +226,7 @@ export default function ChatListPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
-                      {item.order.garment_type} — #{item.order.order_number}
+                      {item.order.customer_name || item.order.garment_type}
                     </p>
                     {item.lastMessage && (
                       <span style={{ fontSize: 11, color: '#bdbdbd', flexShrink: 0 }}>
@@ -225,9 +234,12 @@ export default function ChatListPage() {
                       </span>
                     )}
                   </div>
+                  <p style={{ fontSize: 12, color: '#bdbdbd', margin: '1px 0 2px' }}>
+                    {item.order.garment_type} · #{item.order.order_number}
+                  </p>
                   <p style={{ fontSize: 13, color: item.unread ? '#1a1a1a' : '#9e9e9e', margin: 0, fontWeight: item.unread ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.lastMessage
-                      ? truncate(item.lastMessage.message, 50)
+                      ? (item.lastMessage.sender_id === user?.id ? 'You: ' : '') + truncate(item.lastMessage.message, 45)
                       : 'No messages yet — tap to start'}
                   </p>
                 </div>

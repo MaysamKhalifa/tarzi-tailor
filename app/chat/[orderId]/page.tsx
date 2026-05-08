@@ -51,7 +51,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 export default function ChatThreadPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = use(params)
   const router = useRouter()
-  const { user, loading: authLoading } = useApp()
+  const { user, profile, loading: authLoading } = useApp()
   const [order, setOrder] = useState<Order | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [text, setText] = useState('')
@@ -149,6 +149,8 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
     const { error: err } = await supabase.from('chat_messages').insert({
       order_id: orderId,
       sender_id: user.id,
+      sender_type: 'tailor',
+      sender_name: profile?.full_name || user.email || 'Tailor',
       message: content,
     })
 
@@ -293,6 +295,11 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
                   marginBottom: 8,
                 }}
               >
+                {!isMine && msg.sender_name && (
+                  <span style={{ fontSize: 11, color: '#9e9e9e', marginBottom: 3, marginLeft: 4, fontWeight: 600 }}>
+                    {msg.sender_name}
+                  </span>
+                )}
                 <div
                   style={{
                     maxWidth: '75%',

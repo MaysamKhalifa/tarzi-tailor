@@ -217,15 +217,13 @@ export default function ActivePage() {
 
   useEffect(() => {
     if (!user) return
+    const supabase = createClient()
+
     const fetchActive = async () => {
       setLoading(true)
-      const supabase = createClient()
       const { data } = await supabase
         .from('orders')
-        .select(`
-          *,
-          profiles:user_id ( full_name )
-        `)
+        .select(`*, profiles:user_id ( full_name )`)
         .eq('tailor_id', user.id)
         .in('status', ['confirmed', 'in_progress', 'ready'])
         .order('created_at', { ascending: false })
@@ -237,7 +235,21 @@ export default function ActivePage() {
       setOrders(mapped)
       setLoading(false)
     }
+
     fetchActive()
+
+    // Realtime: keep active orders in sync
+    const channel = supabase
+      .channel(`active-orders:${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `tailor_id=eq.${user.id}`,
+      }, () => { fetchActive() })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [user])
 
   const handleUpdate = (id: string, newStatus: Order['status']) => {

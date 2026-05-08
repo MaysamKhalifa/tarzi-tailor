@@ -266,12 +266,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Pickup & Delivery */}
-        {(order.pickup_date || order.pickup_time || order.delivery_address) && (
+        {(order.pickup_date || order.pickup_time || order.pickup_address) && (
           <SectionCard title="Pickup & Delivery" icon={<Calendar size={14} color="#e91e8c" />}>
             {order.pickup_date && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <Calendar size={14} color="#9e9e9e" />
-                <span style={{ fontSize: 13, color: '#1a1a1a' }}>{order.pickup_date}</span>
+                <span style={{ fontSize: 13, color: '#1a1a1a' }}>
+                  {new Date(order.pickup_date + 'T00:00:00').toLocaleDateString('en-AE', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </span>
               </div>
             )}
             {order.pickup_time && (
@@ -280,20 +282,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <span style={{ fontSize: 13, color: '#1a1a1a' }}>{order.pickup_time}</span>
               </div>
             )}
-            {order.delivery_address && (
+            {order.pickup_address && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <MapPin size={14} color="#9e9e9e" style={{ marginTop: 2 }} />
-                <span style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.4 }}>{order.delivery_address}</span>
+                <span style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.4 }}>{order.pickup_address}</span>
               </div>
             )}
           </SectionCard>
         )}
 
         {/* Notes from Customer */}
-        {order.notes && (
+        {order.comments && (
           <SectionCard title="Notes from Customer" icon={<FileText size={14} color="#e91e8c" />}>
             <p style={{ fontSize: 13, color: '#424242', lineHeight: 1.6, fontStyle: 'italic' }}>
-              "{order.notes}"
+              &ldquo;{order.comments}&rdquo;
             </p>
           </SectionCard>
         )}

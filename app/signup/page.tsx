@@ -53,7 +53,7 @@ export default function SignupPage() {
             phone: phone.trim(),
             role: 'tailor',
           },
-          emailRedirectTo: `${window.location.origin}/onboarding`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 

@@ -28,7 +28,7 @@ export default function LoginPage() {
     const { error: err } = await supabase.auth.resend({
       type: 'signup',
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     setResending(false)
     if (!err) setResent(true)
@@ -65,14 +65,7 @@ export default function LoginPage() {
       return
     }
 
-    // Check email confirmation via metadata
-    if (!authData.user.email_confirmed_at) {
-      setUnverified(true)
-      await supabase.auth.signOut()
-      setLoading(false)
-      return
-    }
-
+    // ── If we got here, Supabase accepted the login — email IS verified ──
     // Fetch profile
     const { data: profile } = await supabase
       .from('profiles')

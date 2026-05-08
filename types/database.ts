@@ -4,6 +4,8 @@ export interface Profile {
   phone: string | null
   avatar_url: string | null
   role: 'customer' | 'tailor' | 'admin'
+  specialties: string[] | null
+  onboarding_complete: boolean
   created_at: string
 }
 

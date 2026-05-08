@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Mail } from 'lucide-react'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
@@ -13,6 +15,19 @@ export default function LoginPage() {
   const [unverified, setUnverified] = useState(false)
   const [resending, setResending]   = useState(false)
   const [resent, setResent]         = useState(false)
+
+  // ── Forward any Supabase auth tokens to the callback handler ──────────────
+  // This handles the edge case where Supabase redirects to /login instead of
+  // /auth/callback (e.g. the callback URL wasn't in the Supabase allowlist yet)
+  useEffect(() => {
+    const search = window.location.search
+    const hash   = window.location.hash
+    const code   = new URLSearchParams(search).get('code')
+    const hasHashToken = hash.includes('access_token=')
+    if (code || hasHashToken) {
+      router.replace(`/auth/callback${search}${hash}`)
+    }
+  }, [router])
 
   const inputStyle: React.CSSProperties = {
     border: '1.5px solid #e8e8e8', background: '#fafafa',

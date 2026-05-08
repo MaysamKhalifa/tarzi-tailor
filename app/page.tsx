@@ -9,6 +9,21 @@ export default function RootPage() {
   const router = useRouter()
 
   useEffect(() => {
+    // ── Intercept Supabase auth redirects BEFORE doing anything else ──
+    // When Supabase falls back to Site URL (e.g. /auth/callback not allowlisted),
+    // the ?code= or #access_token= lands here. Forward it to the callback handler.
+    if (typeof window !== 'undefined') {
+      const search = window.location.search
+      const hash   = window.location.hash
+      const code   = new URLSearchParams(search).get('code')
+      const hasHashToken = hash.includes('access_token=')
+
+      if (code || hasHashToken) {
+        router.replace(`/auth/callback${search}${hash}`)
+        return
+      }
+    }
+
     if (loading) return
     if (user) router.replace('/home')
     else router.replace('/login')

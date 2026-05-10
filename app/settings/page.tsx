@@ -15,7 +15,7 @@ import type { Language } from '@/lib/i18n'
 export default function SettingsPage() {
   const router = useRouter()
   const { user, profile } = useApp()
-  const { t, language, setLanguage, isRTL } = useLanguage()
+  const { t, lang, setLanguage, isRTL } = useLanguage()
 
   const handleLogout = async () => {
     try {
@@ -98,20 +98,20 @@ export default function SettingsPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            {LANGUAGES.map(lang => (
+            {LANGUAGES.map(langOption => (
               <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code, user?.id)}
+                key={langOption.code}
+                onClick={() => setLanguage(langOption.code as Language, user?.id)}
                 className="flex-1 py-3 rounded-2xl transition-all"
                 style={{
-                  border: `2px solid ${language === lang.code ? '#e91e8c' : '#e8e8e8'}`,
-                  background: language === lang.code ? '#fce4ec' : '#f9f9f9',
+                  border: `2px solid ${lang === langOption.code ? '#e91e8c' : '#e8e8e8'}`,
+                  background: lang === langOption.code ? '#fce4ec' : '#f9f9f9',
                 }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: language === lang.code ? '#e91e8c' : '#1a1a1a' }}>
-                  {lang.native}
+                <p style={{ fontSize: 14, fontWeight: 700, color: lang === langOption.code ? '#e91e8c' : '#1a1a1a' }}>
+                  {langOption.native}
                 </p>
-                <p style={{ fontSize: 11, color: language === lang.code ? '#e91e8c' : '#9e9e9e' }}>
-                  {lang.label}
+                <p style={{ fontSize: 11, color: lang === langOption.code ? '#e91e8c' : '#9e9e9e' }}>
+                  {langOption.label}
                 </p>
               </button>
             ))}

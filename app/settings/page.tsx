@@ -79,13 +79,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-dvh bg-white pb-24" dir={isRTL ? 'rtl' : undefined}>
       {/* Header */}
-      <div className="px-5 pt-12 pb-5"
-        style={{ background: 'linear-gradient(135deg, #e91e8c 0%, #f06292 100%)' }}>
-        <PageHeader title="Settings" transparent showBack />
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 4 }}>
-          Preferences & account management
-        </p>
-      </div>
+      <PageHeader title="Settings" subtitle="Preferences & account management" showBack />
 
       <div className="px-5 py-4 flex flex-col gap-5">
 

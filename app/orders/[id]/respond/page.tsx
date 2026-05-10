@@ -52,7 +52,6 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
   const [error, setError] = useState('')
 
   // Accept form state
-  const [price, setPrice] = useState('')
   const [tailorNote, setTailorNote] = useState('')
 
   // Decline form state
@@ -70,10 +69,6 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
   }, [id])
 
   const handleAccept = async () => {
-    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-      setError('Please enter a valid price.')
-      return
-    }
     setError('')
     setSubmitting(true)
     const supabase = createClient()
@@ -92,10 +87,9 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
     const { error: err } = await supabase
       .from('orders')
       .update({
-        status: 'confirmed',
-        tailor_price: Number(price),
+        status:      'confirmed',
         tailor_note: tailorNote || null,
-        tailor_id: user?.id,
+        tailor_id:   user?.id,
         tailor_name: shopName,
       })
       .eq('id', id)
@@ -106,16 +100,16 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
       return
     }
 
-    // Notify the customer
+    // Notify the customer (fire-and-forget)
     if (order?.user_id) {
-      await supabase.from('notifications').insert({
+      supabase.from('notifications').insert({
         user_id:  order.user_id,
         order_id: id,
         type:     'order_accepted',
         title:    'Order Accepted! 🎉',
-        message:  `Your order has been accepted by ${shopName}. Confirmed price: AED ${price}.`,
+        message:  `Your order has been accepted by ${shopName}. You will be contacted for pickup details.`,
         is_read:  false,
-      })
+      }).then(() => {})
     }
 
     setSubmitting(false)
@@ -295,41 +289,18 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
               </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#424242', display: 'block', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
-                {t('orders', 'your_price')} <span style={{ color: '#d32f2f' }}>*</span>
-              </label>
+            {/* Price is fixed — not editable by tailor */}
+            {order?.price != null && (
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: '#f9f9f9',
-                borderRadius: 12,
-                border: '1.5px solid #e0e0e0',
-                padding: '12px 14px',
-                gap: 8,
+                background: '#e8f5e9', borderRadius: 12,
+                padding: '12px 16px', marginBottom: 16,
+                display: 'flex', justifyContent: 'space-between',
                 flexDirection: isRTL ? 'row-reverse' : 'row',
               }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#2e7d32' }}>{t('common', 'aed')}</span>
-                <input
-                  type="number"
-                  value={price}
-                  onChange={e => setPrice(e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: 22,
-                    fontWeight: 900,
-                    color: '#1a1a1a',
-                    background: 'transparent',
-                    textAlign: isRTL ? 'right' : 'left',
-                  }}
-                />
+                <span style={{ fontSize: 13, color: '#2e7d32', fontWeight: 600 }}>Customer&apos;s quoted price</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#2e7d32' }}>AED {order.price}</span>
               </div>
-            </div>
+            )}
 
             <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: '#424242', display: 'block', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>

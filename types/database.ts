@@ -21,6 +21,10 @@ export interface Profile {
   // multi-select specialties
   specialties: string[] | null
   onboarding_complete: boolean
+  // admin approval
+  is_approved: boolean
+  // notification preferences
+  notification_preferences: Record<string, boolean> | null
   created_at: string
 }
 

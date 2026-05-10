@@ -284,27 +284,35 @@ export default function OnboardingPage() {
     )
   }
 
-  // ─── Done screen ───────────────────────────────────────────────────────────
+  // ─── Done screen: Pending admin review ────────────────────────────────────
   if (step === 'done') {
     return (
       <div style={{
         minHeight: '100dvh', maxWidth: 430, margin: '0 auto',
-        background: 'linear-gradient(135deg, #e91e8c 0%, #f06292 100%)',
+        background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', padding: '40px 32px', textAlign: 'center',
       }}>
         <div style={{
           width: 96, height: 96, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.25)',
+          background: 'rgba(255,255,255,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           marginBottom: 24, fontSize: 48,
-        }}>🎉</div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'white', margin: '0 0 12px' }}>
-          {t('onboarding', 'all_set')}
+        }}>⏳</div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'white', margin: '0 0 12px' }}>
+          {t('onboarding', 'pending_title')}
         </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)', lineHeight: 1.6 }}>
-          {t('onboarding', 'all_set_sub')}
+        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.9)', lineHeight: 1.7, marginBottom: 32 }}>
+          {t('onboarding', 'pending_sub')}
         </p>
+        <div style={{
+          background: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: '16px 20px',
+          marginBottom: 20, width: '100%',
+        }}>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, margin: 0 }}>
+            {t('onboarding', 'pending_note')}
+          </p>
+        </div>
       </div>
     )
   }
@@ -631,9 +639,16 @@ export default function OnboardingPage() {
           <p style={{ fontSize: 13, color: '#9e9e9e', lineHeight: 1.6, margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
             {t('onboarding', 'permit_note')}
           </p>
-          <p style={{ fontSize: 13, color: '#bdbdbd', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('onboarding', 'permit_optional')}
-          </p>
+          <div style={{
+            background: '#fff3e0', borderRadius: 10, padding: '10px 14px',
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+          }}>
+            <span style={{ fontSize: 16 }}>⚠️</span>
+            <p style={{ fontSize: 13, color: '#e65100', margin: 0, lineHeight: 1.5 }}>
+              {t('onboarding', 'permit_required_note')}
+            </p>
+          </div>
 
           {errors.specialties && (
             <div style={{ background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', color: '#dc2626', fontSize: 13 }}>
@@ -644,30 +659,30 @@ export default function OnboardingPage() {
 
         <ActionBar>
           <button
-            onClick={handleSave}
-            disabled={saving}
+            onClick={() => {
+              if (!permitUrl) {
+                setErrors({ specialties: t('onboarding', 'err_permit') })
+                return
+              }
+              handleSave()
+            }}
+            disabled={saving || uploading}
             style={{
               width: '100%', padding: '15px', borderRadius: 14, border: 'none',
-              background: saving ? 'linear-gradient(135deg, #f48fb1, #f8bbd0)' : 'linear-gradient(135deg, #e91e8c, #f06292)',
-              color: 'white', fontSize: 16, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
+              background: (saving || uploading)
+                ? 'linear-gradient(135deg, #f48fb1, #f8bbd0)'
+                : 'linear-gradient(135deg, #e91e8c, #f06292)',
+              color: 'white', fontSize: 16, fontWeight: 700,
+              cursor: (saving || uploading) ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: saving ? 'none' : '0 4px 16px rgba(233,30,140,0.3)',
+              boxShadow: (saving || uploading) ? 'none' : '0 4px 16px rgba(233,30,140,0.3)',
             }}
           >
             {saving
               ? <><Loader2 size={18} className="animate-spin" /> {t('onboarding', 'saving')}</>
+              : uploading
+              ? <><Loader2 size={18} className="animate-spin" /> {t('common', 'uploading')}</>
               : <>{t('onboarding', 'complete_btn')} <ChevronRight size={18} /></>}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              width: '100%', padding: '12px', borderRadius: 14,
-              border: '1.5px solid #e8e8e8', background: 'white',
-              color: '#9e9e9e', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {t('onboarding', 'skip_now')}
           </button>
         </ActionBar>
       </div>

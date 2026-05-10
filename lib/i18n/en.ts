@@ -1,6 +1,6 @@
 export const en = {
   nav: {
-    home: 'Home', orders: 'Orders', chat: 'Chat', profile: 'Profile',
+    home: 'Home', orders: 'Orders', chat: 'Chat', profile: 'Profile', settings: 'Settings',
   },
   common: {
     loading: 'Loading...', save: 'Save', cancel: 'Cancel', back: 'Back', done: 'Done',
@@ -70,18 +70,21 @@ export const en = {
     permit_types: 'JPG, PNG, or PDF accepted',
     permit_uploaded: 'Document uploaded ✓',
     permit_note: 'Your license is kept private and only used for verification',
-    skip_now: 'Skip for now',
-    permit_optional: '(Optional — you can add this later in Profile)',
-    complete_btn: 'Complete Setup',
+    complete_btn: 'Submit for Review',
     continue_btn: 'Continue',
     saving: 'Saving your profile...',
     all_set: "You're all set!",
     all_set_sub: 'Your tailor profile is ready. Start accepting orders!',
+    pending_title: 'Profile Submitted! ⏳',
+    pending_sub: 'Your profile is under review by the Tarzi team. You will be notified once approved and visible to customers.',
+    pending_note: 'Review usually takes 1–2 business days. Make sure your trade license is valid to speed up the process.',
+    permit_required_note: 'A valid trade license or work permit is required to be listed on Tarzi.',
     err_select: 'Please select at least one specialty.',
     err_name: 'Please enter your shop or tailor name.',
     err_phone: 'Please enter your phone number.',
     err_language: 'Please select at least one language.',
     err_save: 'Failed to save. Please try again.',
+    err_permit: 'Please upload your trade license or work permit to continue.',
   },
   home: {
     greeting_morning: 'Good morning', greeting_afternoon: 'Good afternoon', greeting_evening: 'Good evening',

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, ClipboardList, MessageCircle, User } from 'lucide-react'
+import { Home, ClipboardList, MessageCircle, User, Settings } from 'lucide-react'
 import { useLanguage } from '@/lib/context/LanguageContext'
 
 export default function BottomNav() {
@@ -10,10 +10,11 @@ export default function BottomNav() {
   const { t, isRTL } = useLanguage()
 
   const NAV_ITEMS = [
-    { href: '/home',    icon: Home,          label: t('nav', 'home')    },
-    { href: '/orders',  icon: ClipboardList, label: t('nav', 'orders')  },
-    { href: '/chat',    icon: MessageCircle, label: t('nav', 'chat')    },
-    { href: '/profile', icon: User,          label: t('nav', 'profile') },
+    { href: '/home',     icon: Home,          label: t('nav', 'home')     },
+    { href: '/orders',   icon: ClipboardList, label: t('nav', 'orders')   },
+    { href: '/chat',     icon: MessageCircle, label: t('nav', 'chat')     },
+    { href: '/profile',  icon: User,          label: t('nav', 'profile')  },
+    { href: '/settings', icon: Settings,      label: t('nav', 'settings') },
   ]
 
   return (

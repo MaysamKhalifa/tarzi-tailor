@@ -55,7 +55,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-dvh bg-white pb-24" dir={isRTL ? 'rtl' : undefined}>
-      <PageHeader title={t('notifications', 'title')} showBack={false} />
+      <PageHeader title={t('notifications', 'title')} showBack />
 
       <div className="px-5 py-4">
         {loading ? (

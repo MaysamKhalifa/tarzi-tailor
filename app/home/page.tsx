@@ -163,6 +163,28 @@ export default function HomePage() {
         paddingBottom: 80,
       }}
     >
+      {/* ── Pending approval banner ── */}
+      {profile && !profile.is_approved && (
+        <div style={{
+          background: '#fff8e1',
+          borderBottom: '1px solid #ffe082',
+          padding: '10px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span style={{ fontSize: 18 }}>⏳</span>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#f57c00', margin: 0 }}>
+              Account Pending Approval
+            </p>
+            <p style={{ fontSize: 11, color: '#795548', margin: 0 }}>
+              You won&apos;t appear in customer searches until an admin approves your profile.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Pink gradient header ── */}
       <div
         style={{

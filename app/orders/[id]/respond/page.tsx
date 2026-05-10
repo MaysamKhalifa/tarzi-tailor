@@ -77,6 +77,18 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
     setError('')
     setSubmitting(true)
     const supabase = createClient()
+
+    // Fetch tailor's shop_name for the notification message
+    let shopName = user?.user_metadata?.full_name ?? 'Your tailor'
+    if (user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_name, full_name')
+        .eq('id', user.id)
+        .single()
+      if (profile) shopName = profile.shop_name || profile.full_name || shopName
+    }
+
     const { error: err } = await supabase
       .from('orders')
       .update({
@@ -84,21 +96,48 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
         tailor_price: Number(price),
         tailor_note: tailorNote || null,
         tailor_id: user?.id,
-        tailor_name: user?.user_metadata?.full_name ?? null,
+        tailor_name: shopName,
       })
       .eq('id', id)
-    setSubmitting(false)
+
     if (err) {
+      setSubmitting(false)
       setError('Failed to accept order. Please try again.')
-    } else {
-      router.push('/orders')
+      return
     }
+
+    // Notify the customer
+    if (order?.user_id) {
+      await supabase.from('notifications').insert({
+        user_id:  order.user_id,
+        order_id: id,
+        type:     'order_accepted',
+        title:    'Order Accepted! 🎉',
+        message:  `Your order has been accepted by ${shopName}. Confirmed price: AED ${price}.`,
+        is_read:  false,
+      })
+    }
+
+    setSubmitting(false)
+    router.push('/orders')
   }
 
   const handleDecline = async () => {
     setError('')
     setSubmitting(true)
     const supabase = createClient()
+
+    // Fetch tailor's shop_name for the notification message
+    let shopName = user?.user_metadata?.full_name ?? 'Your tailor'
+    if (user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_name, full_name')
+        .eq('id', user.id)
+        .single()
+      if (profile) shopName = profile.shop_name || profile.full_name || shopName
+    }
+
     const { error: err } = await supabase
       .from('orders')
       .update({
@@ -106,12 +145,27 @@ export default function RespondPage({ params }: { params: Promise<{ id: string }
         decline_reason: declineNotes ? `${reason}: ${declineNotes}` : reason,
       })
       .eq('id', id)
-    setSubmitting(false)
+
     if (err) {
+      setSubmitting(false)
       setError('Failed to decline order. Please try again.')
-    } else {
-      router.push('/orders')
+      return
     }
+
+    // Notify the customer
+    if (order?.user_id) {
+      await supabase.from('notifications').insert({
+        user_id:  order.user_id,
+        order_id: id,
+        type:     'order_declined',
+        title:    'Order Update',
+        message:  `Unfortunately, ${shopName} is unable to take your order at this time. Reason: ${declineNotes ? `${reason} — ${declineNotes}` : reason}.`,
+        is_read:  false,
+      })
+    }
+
+    setSubmitting(false)
+    router.push('/orders')
   }
 
   return (

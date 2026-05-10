@@ -7,6 +7,7 @@ import BottomNav from '@/components/layout/BottomNav'
 import PageHeader from '@/components/layout/PageHeader'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 
 const GARMENT_OPTIONS = [
   'Kandoora', 'Abaya', 'Suit', 'Dress', 'Shirt', 'Blouse', 'Trousers',
@@ -23,6 +24,7 @@ const TURNAROUND_OPTIONS = [
 export default function ServicesPage() {
   const { user, loading: authLoading } = useApp()
   const router = useRouter()
+  const { t, isRTL } = useLanguage()
 
   const [services, setServices] = useState({
     alterations: true,
@@ -67,20 +69,22 @@ export default function ServicesPage() {
   }
 
   const SERVICE_ITEMS = [
-    { key: 'alterations' as const, icon: Scissors, label: 'Alterations', desc: 'Adjustments & repairs', color: '#e91e8c', bg: '#fce4ec' },
-    { key: 'from_scratch' as const, icon: Sparkles, label: 'From Scratch', desc: 'Custom garments made fresh', color: '#7b1fa2', bg: '#f3e5f5' },
-    { key: 'upcycling' as const, icon: RefreshCw, label: 'Upcycling', desc: 'Transform existing clothes', color: '#2e7d32', bg: '#e8f5e9' },
+    { key: 'alterations' as const, icon: Scissors, label: t('orders', 'alterations'), desc: 'Adjustments & repairs', color: '#e91e8c', bg: '#fce4ec' },
+    { key: 'from_scratch' as const, icon: Sparkles, label: t('orders', 'from_scratch'), desc: 'Custom garments made fresh', color: '#7b1fa2', bg: '#f3e5f5' },
+    { key: 'upcycling' as const, icon: RefreshCw, label: t('orders', 'upcycling'), desc: 'Transform existing clothes', color: '#2e7d32', bg: '#e8f5e9' },
   ]
 
   return (
-    <div className="min-h-dvh bg-white pb-24">
-      <PageHeader title="My Services" showBack={false} />
+    <div className="min-h-dvh bg-white pb-24" dir={isRTL ? 'rtl' : undefined}>
+      <PageHeader title={t('services', 'title')} showBack={false} />
 
       <div className="px-5 py-4 flex flex-col gap-5">
 
         {/* Service toggles */}
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12 }}>Services Offered</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('services', 'subtitle')}
+          </h3>
           <div className="flex flex-col gap-3">
             {SERVICE_ITEMS.map(({ key, icon: Icon, label, desc, color, bg }) => {
               const enabled = services[key]
@@ -90,13 +94,13 @@ export default function ServicesPage() {
                   <button
                     onClick={() => setServices(prev => ({ ...prev, [key]: !prev[key] }))}
                     className="w-full flex items-center gap-3 p-4 text-left"
-                    style={{ background: enabled ? bg : 'white' }}
+                    style={{ background: enabled ? bg : 'white', flexDirection: isRTL ? 'row-reverse' : 'row' }}
                   >
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center"
                       style={{ background: enabled ? color : '#f0f0f0' }}>
                       <Icon size={20} color={enabled ? 'white' : '#bbb'} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1" style={{ textAlign: isRTL ? 'right' : 'left' }}>
                       <p style={{ fontSize: 15, fontWeight: 700, color: enabled ? '#1a1a1a' : '#9e9e9e' }}>{label}</p>
                       <p style={{ fontSize: 12, color: enabled ? '#555' : '#bbb' }}>{desc}</p>
                     </div>
@@ -108,12 +112,12 @@ export default function ServicesPage() {
 
                   {enabled && (
                     <div className="px-4 pb-4 pt-1" style={{ background: bg }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 5 }}>
-                        Starting price (AED)
+                      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 5, textAlign: isRTL ? 'right' : 'left' }}>
+                        {t('services', 'price')}
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2"
-                          style={{ fontSize: 13, fontWeight: 700, color: color }}>AED</span>
+                          style={{ fontSize: 13, fontWeight: 700, color: color }}>{t('common', 'aed')}</span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -135,8 +139,10 @@ export default function ServicesPage() {
 
         {/* Garment specialties */}
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12 }}>Specialty Garments</h3>
-          <div className="flex flex-wrap gap-2">
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('services', 'name')}
+          </h3>
+          <div className="flex flex-wrap gap-2" style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             {GARMENT_OPTIONS.map(g => {
               const selected = garments.includes(g)
               return (
@@ -155,7 +161,9 @@ export default function ServicesPage() {
 
         {/* Turnaround */}
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12 }}>Typical Turnaround Time</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('services', 'desc')}
+          </h3>
           <div className="grid grid-cols-2 gap-2">
             {TURNAROUND_OPTIONS.map(opt => (
               <button key={opt.value} onClick={() => setTurnaround(opt.value)}
@@ -182,7 +190,7 @@ export default function ServicesPage() {
           }}
         >
           <Save size={18} />
-          {saved ? 'Saved!' : saving ? 'Saving...' : 'Save Services'}
+          {saved ? t('common', 'done') : saving ? t('common', 'uploading') : t('services', 'save')}
         </button>
       </div>
 

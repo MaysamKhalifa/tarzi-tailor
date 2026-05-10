@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import BottomNav from '@/components/layout/BottomNav'
 import {
   Bell,
@@ -20,13 +21,6 @@ import {
   Eye,
 } from 'lucide-react'
 import type { Order } from '@/types/database'
-
-function getHourGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
-}
 
 function getServiceIcon(serviceType: Order['service_type']) {
   switch (serviceType) {
@@ -58,17 +52,6 @@ function getStatusColor(status: Order['status']): { bg: string; text: string } {
   }
 }
 
-function getStatusLabel(status: Order['status']): string {
-  switch (status) {
-    case 'confirmed':
-      return 'Confirmed'
-    case 'in_progress':
-      return 'In Progress'
-    default:
-      return status.charAt(0).toUpperCase() + status.slice(1)
-  }
-}
-
 function getMonthEarnings(orders: Order[]): number {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -84,8 +67,33 @@ function getMonthEarnings(orders: Order[]): number {
 export default function HomePage() {
   const router = useRouter()
   const { user, profile, loading: authLoading } = useApp()
+  const { t, isRTL } = useLanguage()
   const [orders, setOrders] = useState<Order[]>([])
   const [ordersLoading, setOrdersLoading] = useState(true)
+
+  function getHourGreeting(): string {
+    const hour = new Date().getHours()
+    if (hour < 12) return t('home', 'greeting_morning')
+    if (hour < 17) return t('home', 'greeting_afternoon')
+    return t('home', 'greeting_evening')
+  }
+
+  function getStatusLabel(status: Order['status']): string {
+    switch (status) {
+      case 'confirmed':
+        return t('orders', 'confirmed')
+      case 'in_progress':
+        return t('orders', 'in_progress')
+      case 'ready':
+        return t('orders', 'ready')
+      case 'delivered':
+        return t('orders', 'delivered')
+      case 'cancelled':
+        return t('orders', 'cancelled')
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1)
+    }
+  }
 
   // Auth guard
   useEffect(() => {
@@ -146,6 +154,7 @@ export default function HomePage() {
 
   return (
     <div
+      dir={isRTL ? 'rtl' : undefined}
       style={{
         minHeight: '100vh',
         background: '#f7f7f7',
@@ -165,7 +174,7 @@ export default function HomePage() {
         }}
       >
         {/* Top row: greeting + bell */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', margin: 0 }}>
             {getHourGreeting()}, <strong style={{ color: 'white' }}>{firstName}!</strong> 👋
           </p>
@@ -193,9 +202,10 @@ export default function HomePage() {
             color: 'white',
             margin: '0 0 20px',
             letterSpacing: -0.5,
+            textAlign: isRTL ? 'right' : 'left',
           }}
         >
-          Tailor Dashboard
+          {t('home', 'dashboard')}
         </h1>
 
         {/* 2×2 stat cards */}
@@ -215,8 +225,8 @@ export default function HomePage() {
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
             }}
           >
-            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              New Orders
+            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('home', 'new_orders')}
             </p>
             {ordersLoading ? (
               <div style={{ height: 28, display: 'flex', alignItems: 'center' }}>
@@ -227,7 +237,7 @@ export default function HomePage() {
                 {pendingOrders.length}
               </p>
             )}
-            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0' }}>Awaiting action</p>
+            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0', textAlign: isRTL ? 'right' : 'left' }}>{t('home', 'awaiting')}</p>
           </div>
 
           {/* Active */}
@@ -239,8 +249,8 @@ export default function HomePage() {
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
             }}
           >
-            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Active
+            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('home', 'active')}
             </p>
             {ordersLoading ? (
               <div style={{ height: 28, display: 'flex', alignItems: 'center' }}>
@@ -251,7 +261,7 @@ export default function HomePage() {
                 {activeOrders.length}
               </p>
             )}
-            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0' }}>In progress</p>
+            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0', textAlign: isRTL ? 'right' : 'left' }}>{t('home', 'in_progress')}</p>
           </div>
 
           {/* Earnings */}
@@ -263,8 +273,8 @@ export default function HomePage() {
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
             }}
           >
-            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Earnings
+            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('home', 'earnings')}
             </p>
             {ordersLoading ? (
               <div style={{ height: 28, display: 'flex', alignItems: 'center' }}>
@@ -272,10 +282,10 @@ export default function HomePage() {
               </div>
             ) : (
               <p style={{ fontSize: 22, fontWeight: 800, color: '#059669', margin: 0, lineHeight: 1 }}>
-                AED {monthEarnings.toFixed(0)}
+                {t('common', 'aed')} {monthEarnings.toFixed(0)}
               </p>
             )}
-            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0' }}>This month</p>
+            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0', textAlign: isRTL ? 'right' : 'left' }}>{t('home', 'this_month')}</p>
           </div>
 
           {/* Rating */}
@@ -287,13 +297,13 @@ export default function HomePage() {
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
             }}
           >
-            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Rating
+            <p style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('home', 'rating')}
             </p>
             <p style={{ fontSize: 28, fontWeight: 800, color: '#f59e0b', margin: 0, lineHeight: 1 }}>
               4.8 ⭐
             </p>
-            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0' }}>Overall score</p>
+            <p style={{ fontSize: 11, color: '#bdbdbd', margin: '4px 0 0', textAlign: isRTL ? 'right' : 'left' }}>{t('home', 'overall')}</p>
           </div>
         </div>
       </div>
@@ -303,15 +313,15 @@ export default function HomePage() {
 
         {/* Section 1: New Requests */}
         <section style={{ padding: '0 0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 12 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
-              New Requests
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 12, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a1a', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('home', 'new_requests')}
             </h2>
             <Link
               href="/orders"
-              style={{ fontSize: 13, color: '#e91e8c', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2 }}
+              style={{ fontSize: 13, color: '#e91e8c', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }}
             >
-              See All <ChevronRight size={14} />
+              {t('home', 'see_all')} <ChevronRight size={14} />
             </Link>
           </div>
 
@@ -330,7 +340,7 @@ export default function HomePage() {
                 border: '1.5px dashed #f0f0f0',
               }}
             >
-              <p style={{ fontSize: 13, color: '#bdbdbd', margin: 0 }}>No new requests right now</p>
+              <p style={{ fontSize: 13, color: '#bdbdbd', margin: 0 }}>{t('home', 'no_requests')}</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 20px' }}>
@@ -345,6 +355,7 @@ export default function HomePage() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
                   }}
                 >
                   {/* Service icon */}
@@ -374,16 +385,17 @@ export default function HomePage() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
                       {order.garment_type}
                     </p>
-                    <p style={{ fontSize: 12, color: '#9e9e9e', margin: '2px 0 0' }}>
+                    <p style={{ fontSize: 12, color: '#9e9e9e', margin: '2px 0 0', textAlign: isRTL ? 'right' : 'left' }}>
                       #{order.order_number} · {order.customer_name ?? 'Customer'}
                     </p>
                     {order.pickup_date && (
-                      <p style={{ fontSize: 11, color: '#bdbdbd', margin: '2px 0 0' }}>
-                        Pickup: {formatDate(order.pickup_date)}
+                      <p style={{ fontSize: 11, color: '#bdbdbd', margin: '2px 0 0', textAlign: isRTL ? 'right' : 'left' }}>
+                        {t('home', 'pickup_prefix')} {formatDate(order.pickup_date)}
                       </p>
                     )}
                   </div>
@@ -403,10 +415,11 @@ export default function HomePage() {
                         gap: 4,
                         whiteSpace: 'nowrap',
                         flexShrink: 0,
+                        flexDirection: isRTL ? 'row-reverse' : 'row',
                       }}
                     >
                       <Eye size={12} />
-                      View
+                      {t('home', 'view')}
                     </div>
                   </Link>
                 </div>
@@ -420,15 +433,15 @@ export default function HomePage() {
 
         {/* Section 2: Active Orders */}
         <section style={{ padding: '20px 0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 12 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
-              Active Orders
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 12, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a1a', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('home', 'active_orders')}
             </h2>
             <Link
               href="/orders"
-              style={{ fontSize: 13, color: '#e91e8c', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2 }}
+              style={{ fontSize: 13, color: '#e91e8c', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }}
             >
-              See All <ChevronRight size={14} />
+              {t('home', 'see_all')} <ChevronRight size={14} />
             </Link>
           </div>
 
@@ -447,7 +460,7 @@ export default function HomePage() {
                 border: '1.5px dashed #f0f0f0',
               }}
             >
-              <p style={{ fontSize: 13, color: '#bdbdbd', margin: 0 }}>No active orders at the moment</p>
+              <p style={{ fontSize: 13, color: '#bdbdbd', margin: 0 }}>{t('home', 'no_active')}</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 20px' }}>
@@ -464,6 +477,7 @@ export default function HomePage() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 12,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
                     }}
                   >
                     {/* Service icon */}
@@ -484,7 +498,7 @@ export default function HomePage() {
 
                     {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
                         <p
                           style={{
                             fontSize: 14,
@@ -513,12 +527,12 @@ export default function HomePage() {
                           {getStatusLabel(order.status)}
                         </span>
                       </div>
-                      <p style={{ fontSize: 12, color: '#9e9e9e', margin: 0 }}>
+                      <p style={{ fontSize: 12, color: '#9e9e9e', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
                         #{order.order_number} · {order.customer_name ?? 'Customer'}
                       </p>
                       {order.pickup_date && (
-                        <p style={{ fontSize: 11, color: '#bdbdbd', margin: '2px 0 0' }}>
-                          Pickup: {formatDate(order.pickup_date)}
+                        <p style={{ fontSize: 11, color: '#bdbdbd', margin: '2px 0 0', textAlign: isRTL ? 'right' : 'left' }}>
+                          {t('home', 'pickup_prefix')} {formatDate(order.pickup_date)}
                         </p>
                       )}
                     </div>
@@ -538,10 +552,11 @@ export default function HomePage() {
                           gap: 4,
                           whiteSpace: 'nowrap',
                           flexShrink: 0,
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
                         }}
                       >
                         <MessageCircle size={12} />
-                        Chat
+                        {t('home', 'chat')}
                       </div>
                     </Link>
                   </div>
@@ -556,16 +571,16 @@ export default function HomePage() {
 
         {/* Section 3: Quick Actions */}
         <section style={{ padding: '20px 20px 8px' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a1a', margin: '0 0 14px' }}>
-            Quick Actions
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a1a', margin: '0 0 14px', textAlign: isRTL ? 'right' : 'left' }}>
+            {t('home', 'quick_actions')}
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
             {[
-              { href: '/schedule', icon: Calendar, label: 'Schedule', color: '#e91e8c', bg: '#fdf2f8' },
-              { href: '/services', icon: Tag, label: 'Services', color: '#7c3aed', bg: '#f5f3ff' },
-              { href: '/reviews', icon: Star, label: 'Reviews', color: '#f59e0b', bg: '#fffbeb' },
-              { href: '/notifications', icon: Bell, label: 'Alerts', color: '#0891b2', bg: '#ecfeff' },
-            ].map(({ href, icon: Icon, label, color, bg }) => (
+              { href: '/schedule', icon: Calendar, labelKey: 'schedule' as const, color: '#e91e8c', bg: '#fdf2f8' },
+              { href: '/services', icon: Tag, labelKey: 'services' as const, color: '#7c3aed', bg: '#f5f3ff' },
+              { href: '/reviews', icon: Star, labelKey: 'reviews' as const, color: '#f59e0b', bg: '#fffbeb' },
+              { href: '/notifications', icon: Bell, labelKey: 'alerts' as const, color: '#0891b2', bg: '#ecfeff' },
+            ].map(({ href, icon: Icon, labelKey, color, bg }) => (
               <Link key={href} href={href} style={{ textDecoration: 'none' }}>
                 <div
                   style={{
@@ -593,7 +608,7 @@ export default function HomePage() {
                     <Icon size={18} color={color} />
                   </div>
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#3a3a3a', textAlign: 'center' }}>
-                    {label}
+                    {t('home', labelKey)}
                   </span>
                 </div>
               </Link>

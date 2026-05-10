@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Package, CheckCircle, Scissors, Truck, XCircle, ChevronRight } from 'lucide-react'
+import { Bell, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/layout/BottomNav'
 import PageHeader from '@/components/layout/PageHeader'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import type { Order } from '@/types/database'
 
 function timeAgo(dateStr: string) {
@@ -32,6 +33,7 @@ const STATUS_NOTIF = {
 export default function NotificationsPage() {
   const { user, loading: authLoading } = useApp()
   const router = useRouter()
+  const { t, isRTL } = useLanguage()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -52,8 +54,8 @@ export default function NotificationsPage() {
   }, [user, authLoading, router])
 
   return (
-    <div className="min-h-dvh bg-white pb-24">
-      <PageHeader title="Notifications" showBack={false} />
+    <div className="min-h-dvh bg-white pb-24" dir={isRTL ? 'rtl' : undefined}>
+      <PageHeader title={t('notifications', 'title')} showBack={false} />
 
       <div className="px-5 py-4">
         {loading ? (
@@ -63,8 +65,8 @@ export default function NotificationsPage() {
         ) : orders.length === 0 ? (
           <div className="text-center py-20">
             <Bell size={48} color="#e8e8e8" className="mx-auto mb-4" />
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>No notifications yet</p>
-            <p style={{ color: '#9e9e9e', fontSize: 13 }}>Your order activity will appear here</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>{t('notifications', 'no_notif')}</p>
+            <p style={{ color: '#9e9e9e', fontSize: 13 }}>{t('notifications', 'no_notif_sub')}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -79,6 +81,7 @@ export default function NotificationsPage() {
                   style={{
                     background: isPending ? cfg.bg : 'white',
                     border: `1px solid ${isPending ? cfg.color + '30' : '#f0f0f0'}`,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
                   }}
                 >
                   {/* Emoji badge */}
@@ -90,14 +93,14 @@ export default function NotificationsPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p style={{ fontSize: 13, fontWeight: 700, color: cfg.color }}>{cfg.text}</p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginTop: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: cfg.color, textAlign: isRTL ? 'right' : 'left' }}>{cfg.text}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginTop: 1, textAlign: isRTL ? 'right' : 'left' }}>
                       {order.garment_type}
                     </p>
-                    <p style={{ fontSize: 11, color: '#9e9e9e', marginTop: 1 }}>{order.order_number}</p>
+                    <p style={{ fontSize: 11, color: '#9e9e9e', marginTop: 1, textAlign: isRTL ? 'right' : 'left' }}>{order.order_number}</p>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1" style={{ alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
                     <span style={{ fontSize: 11, color: '#bbb' }}>{timeAgo(order.created_at)}</span>
                     {isPending && (
                       <span
@@ -105,7 +108,7 @@ export default function NotificationsPage() {
                         style={{ background: '#e91e8c' }}
                       />
                     )}
-                    <ChevronRight size={14} color="#ccc" />
+                    <ChevronRight size={14} color="#ccc" style={{ transform: isRTL ? 'scaleX(-1)' : undefined }} />
                   </div>
                 </button>
               )

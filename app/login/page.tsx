@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Mail } from 'lucide-react'
+import { useLanguage } from '@/lib/context/LanguageContext'
+import type { Language } from '@/lib/i18n'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { t, isRTL, setLanguage, lang } = useLanguage()
+
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
@@ -17,8 +21,6 @@ export default function LoginPage() {
   const [resent, setResent]         = useState(false)
 
   // ── Forward any Supabase auth tokens to the callback handler ──────────────
-  // This handles the edge case where Supabase redirects to /login instead of
-  // /auth/callback (e.g. the callback URL wasn't in the Supabase allowlist yet)
   useEffect(() => {
     const search = window.location.search
     const hash   = window.location.hash
@@ -33,6 +35,8 @@ export default function LoginPage() {
     border: '1.5px solid #e8e8e8', background: '#fafafa',
     borderRadius: 12, padding: '12px 14px', fontSize: 15,
     width: '100%', outline: 'none', boxSizing: 'border-box', color: '#1a1a1a',
+    textAlign: isRTL ? 'right' : 'left',
+    direction: isRTL ? 'rtl' : 'ltr',
   }
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#e91e8c' }
   const onBlur  = (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#e8e8e8' }
@@ -63,7 +67,6 @@ export default function LoginPage() {
     })
 
     if (authError) {
-      // Supabase returns this when email is not confirmed
       if (authError.message.toLowerCase().includes('email not confirmed') ||
           authError.message.toLowerCase().includes('not confirmed')) {
         setUnverified(true)
@@ -80,7 +83,6 @@ export default function LoginPage() {
       return
     }
 
-    // ── If we got here, Supabase accepted the login — email IS verified ──
     // Fetch profile
     const { data: profile } = await supabase
       .from('profiles')
@@ -89,7 +91,6 @@ export default function LoginPage() {
       .single()
 
     if (!profile) {
-      // Profile doesn't exist yet — create it and send to onboarding
       await supabase.from('profiles').upsert({
         id: authData.user.id,
         full_name: authData.user.user_metadata?.full_name || '',
@@ -107,7 +108,6 @@ export default function LoginPage() {
       return
     }
 
-    // Send to onboarding if not completed yet
     if (!profile.onboarding_complete) {
       window.location.href = '/onboarding'
       return
@@ -116,10 +116,39 @@ export default function LoginPage() {
     window.location.href = '/home'
   }
 
+  const LANG_BUTTONS: { code: Language; label: string }[] = [
+    { code: 'en', label: 'EN' },
+    { code: 'ar', label: 'عربي' },
+    { code: 'ur', label: 'اردو' },
+  ]
+
+  const LanguageSwitcher = () => (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingTop: 8 }}>
+      {LANG_BUTTONS.map(({ code, label }) => (
+        <button
+          key={code}
+          onClick={() => setLanguage(code)}
+          style={{
+            padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+            border: lang === code ? '2px solid #e91e8c' : '2px solid #e8e8e8',
+            background: lang === code ? '#fce4ec' : 'white',
+            color: lang === code ? '#e91e8c' : '#9e9e9e',
+            cursor: 'pointer',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+
   // ── Email not verified screen ─────────────────────────────────────────────
   if (unverified) {
     return (
-      <div style={{ minHeight: '100dvh', maxWidth: 430, margin: '0 auto', background: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div
+        dir={isRTL ? 'rtl' : 'ltr'}
+        style={{ minHeight: '100dvh', maxWidth: 430, margin: '0 auto', background: 'white', display: 'flex', flexDirection: 'column' }}
+      >
         <div style={{ background: 'linear-gradient(135deg, #e91e8c, #f06292)', height: 6 }} />
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
@@ -133,18 +162,18 @@ export default function LoginPage() {
             <Mail size={40} color="#e91e8c" />
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: '0 0 12px' }}>
-            Verify your email first
+            {t('auth', 'unverified_title')}
           </h2>
           <p style={{ fontSize: 14, color: '#616161', lineHeight: 1.7, margin: '0 0 8px' }}>
-            We sent a link to <strong>{email}</strong>
+            {t('auth', 'unverified_body')} <strong>{email}</strong>
           </p>
           <p style={{ fontSize: 13, color: '#9e9e9e', lineHeight: 1.6, margin: '0 0 32px' }}>
-            Click the link in your email to activate your account, then come back and sign in.
+            {t('auth', 'unverified_sub')}
           </p>
 
           {resent && (
             <div style={{ width: '100%', background: '#e8f5e9', borderRadius: 10, padding: '10px 14px', color: '#2e7d32', fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
-              ✓ Verification email resent!
+              {t('auth', 'resent_confirm')}
             </div>
           )}
 
@@ -156,12 +185,16 @@ export default function LoginPage() {
               fontSize: 15, fontWeight: 700, cursor: resending ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}>
-            {resending ? <><Loader2 size={16} className="animate-spin" /> Sending...</> : resent ? '✓ Email Sent' : 'Resend Verification Email'}
+            {resending
+              ? <><Loader2 size={16} className="animate-spin" /> {t('auth', 'resending')}</>
+              : resent
+              ? t('auth', 'resent')
+              : t('auth', 'resend_verify')}
           </button>
 
           <button onClick={() => setUnverified(false)}
             style={{ background: 'none', border: 'none', color: '#9e9e9e', fontSize: 14, cursor: 'pointer' }}>
-            ← Back to Sign In
+            {t('auth', 'back_login')}
           </button>
         </div>
       </div>
@@ -170,8 +203,10 @@ export default function LoginPage() {
 
   // ── Normal login screen ────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100dvh', background: '#f7f7f7', display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto' }}>
-
+    <div
+      dir={isRTL ? 'rtl' : 'ltr'}
+      style={{ minHeight: '100dvh', background: '#f7f7f7', display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto' }}
+    >
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #e91e8c 0%, #f06292 100%)',
@@ -186,7 +221,7 @@ export default function LoginPage() {
           Tarzi Tailor Portal
         </h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', margin: 0, textAlign: 'center' }}>
-          Manage your orders & grow your business
+          {t('auth', 'manage_subtitle')}
         </p>
       </div>
 
@@ -197,8 +232,12 @@ export default function LoginPage() {
         display: 'flex', flexDirection: 'column', gap: 20,
       }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>Welcome back</h2>
-          <p style={{ fontSize: 13, color: '#9e9e9e', margin: '4px 0 0' }}>Sign in to your tailor account</p>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('auth', 'login_title')}
+          </h2>
+          <p style={{ fontSize: 13, color: '#9e9e9e', margin: '4px 0 0', textAlign: isRTL ? 'right' : 'left' }}>
+            {t('auth', 'login_subtitle')}
+          </p>
         </div>
 
         {error && (
@@ -209,15 +248,19 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a' }}>Email Address</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a', textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'email')}
+            </label>
             <input type="email" placeholder="your@email.com" value={email}
               onChange={e => setEmail(e.target.value)} onFocus={onFocus} onBlur={onBlur}
               style={inputStyle} required autoComplete="email" />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a' }}>Password</label>
-            <input type="password" placeholder="Your password" value={password}
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a', textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'password')}
+            </label>
+            <input type="password" placeholder="••••••••" value={password}
               onChange={e => setPassword(e.target.value)} onFocus={onFocus} onBlur={onBlur}
               style={inputStyle} required autoComplete="current-password" />
           </div>
@@ -229,18 +272,22 @@ export default function LoginPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             marginTop: 4, boxShadow: loading ? 'none' : '0 4px 16px rgba(233,30,140,0.3)',
           }}>
-            {loading ? <><Loader2 size={18} className="animate-spin" /> Signing In...</> : 'Sign In →'}
+            {loading
+              ? <><Loader2 size={18} className="animate-spin" /> {t('auth', 'logging_in')}</>
+              : t('auth', 'login_btn') + ' →'}
           </button>
         </form>
 
         <div style={{ textAlign: 'center', paddingTop: 8, borderTop: '1px solid #f5f5f5' }}>
           <p style={{ fontSize: 14, color: '#9e9e9e', margin: 0 }}>
-            New tailor?{' '}
+            {t('auth', 'new_tailor')}{' '}
             <Link href="/signup" style={{ color: '#e91e8c', fontWeight: 700, textDecoration: 'none' }}>
-              Join Tarzi
+              {t('auth', 'join_tarzi')}
             </Link>
           </p>
         </div>
+
+        <LanguageSwitcher />
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import PageHeader from '@/components/layout/PageHeader'
 import BottomNav from '@/components/layout/BottomNav'
 import { Scissors, Search, Loader2 } from 'lucide-react'
@@ -16,7 +17,7 @@ interface ConversationItem {
   unread: boolean
 }
 
-function formatTime(dateStr: string): string {
+function formatTime(dateStr: string, todayLabel: string, yesterdayLabel: string): string {
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -24,7 +25,7 @@ function formatTime(dateStr: string): string {
   if (diffDays === 0) {
     return date.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: true })
   } else if (diffDays === 1) {
-    return 'Yesterday'
+    return yesterdayLabel
   } else if (diffDays < 7) {
     return date.toLocaleDateString('en-AE', { weekday: 'short' })
   }
@@ -42,6 +43,7 @@ function getOrderInitial(order: Order): string {
 export default function ChatListPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useApp()
+  const { t, isRTL } = useLanguage()
   const [conversations, setConversations] = useState<ConversationItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -124,22 +126,31 @@ export default function ChatListPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f7f7f7', maxWidth: 430, margin: '0 auto', paddingBottom: 80 }}>
-      <PageHeader title="Messages" showBack={false} />
+    <div dir={isRTL ? 'rtl' : undefined} style={{ minHeight: '100vh', background: '#f7f7f7', maxWidth: 430, margin: '0 auto', paddingBottom: 80 }}>
+      <PageHeader title={t('chat', 'title')} showBack={false} />
 
       {/* Search */}
       <div style={{ padding: '12px 16px', background: 'white', borderBottom: '1px solid #f0f0f0' }}>
         <div style={{ position: 'relative' }}>
-          <Search size={16} color="#bdbdbd" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+          <Search
+            size={16}
+            color="#bdbdbd"
+            style={{
+              position: 'absolute',
+              [isRTL ? 'right' : 'left']: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          />
           <input
             type="text"
-            placeholder="Search orders or garments…"
+            placeholder={t('common', 'search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
               width: '100%',
-              paddingLeft: 38,
-              paddingRight: 14,
+              paddingLeft: isRTL ? 14 : 38,
+              paddingRight: isRTL ? 38 : 14,
               paddingTop: 10,
               paddingBottom: 10,
               borderRadius: 12,
@@ -149,6 +160,8 @@ export default function ChatListPage() {
               color: '#1a1a1a',
               outline: 'none',
               boxSizing: 'border-box',
+              textAlign: isRTL ? 'right' : 'left',
+              direction: isRTL ? 'rtl' : 'ltr',
             }}
           />
         </div>
@@ -165,10 +178,10 @@ export default function ChatListPage() {
             <Scissors size={28} color="#e91e8c" />
           </div>
           <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 8px' }}>
-            {search ? 'No results found' : 'No conversations yet'}
+            {search ? t('common', 'search') : t('chat', 'no_chats')}
           </p>
           <p style={{ fontSize: 13, color: '#9e9e9e', margin: 0 }}>
-            {search ? 'Try a different search term' : 'Accept orders to start chatting.'}
+            {search ? '' : t('chat', 'no_chats_sub')}
           </p>
         </div>
       ) : (
@@ -183,6 +196,7 @@ export default function ChatListPage() {
                   padding: '14px 16px',
                   borderBottom: idx < filtered.length - 1 ? '1px solid #f5f5f5' : 'none',
                   background: 'white',
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
                 }}
               >
                 {/* Avatar */}
@@ -211,7 +225,7 @@ export default function ChatListPage() {
                       style={{
                         position: 'absolute',
                         top: 1,
-                        right: 1,
+                        [isRTL ? 'left' : 'right']: 1,
                         width: 12,
                         height: 12,
                         borderRadius: 6,
@@ -224,27 +238,27 @@ export default function ChatListPage() {
 
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
                       {item.order.customer_name || item.order.garment_type}
                     </p>
                     {item.lastMessage && (
                       <span style={{ fontSize: 11, color: '#bdbdbd', flexShrink: 0 }}>
-                        {formatTime(item.lastMessage.created_at)}
+                        {formatTime(item.lastMessage.created_at, t('chat', 'today'), t('chat', 'yesterday'))}
                       </span>
                     )}
                   </div>
-                  <p style={{ fontSize: 12, color: '#bdbdbd', margin: '1px 0 2px' }}>
-                    {item.order.garment_type} · #{item.order.order_number}
+                  <p style={{ fontSize: 12, color: '#bdbdbd', margin: '1px 0 2px', textAlign: isRTL ? 'right' : 'left' }}>
+                    {item.order.garment_type} · {t('chat', 'order_label')} #{item.order.order_number}
                   </p>
-                  <p style={{ fontSize: 13, color: item.unread ? '#1a1a1a' : '#9e9e9e', margin: 0, fontWeight: item.unread ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontSize: 13, color: item.unread ? '#1a1a1a' : '#9e9e9e', margin: 0, fontWeight: item.unread ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: isRTL ? 'right' : 'left' }}>
                     {item.lastMessage
-                      ? (item.lastMessage.sender_id === user?.id ? 'You: ' : '') + truncate(item.lastMessage.message, 45)
-                      : 'No messages yet — tap to start'}
+                      ? (item.lastMessage.sender_id === user?.id ? `${t('chat', 'you')}: ` : '') + truncate(item.lastMessage.message, 45)
+                      : t('chat', 'no_chats_sub')}
                   </p>
                 </div>
 
-                {/* Unread dot (right side) */}
+                {/* Unread dot (outer side) */}
                 {item.unread && (
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: '#e91e8c', flexShrink: 0 }} />
                 )}

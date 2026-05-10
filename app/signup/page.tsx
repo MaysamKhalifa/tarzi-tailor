@@ -4,8 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
+import { useLanguage } from '@/lib/context/LanguageContext'
+import type { Language } from '@/lib/i18n'
 
 export default function SignupPage() {
+  const { t, isRTL, setLanguage, lang } = useLanguage()
+
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,6 +27,8 @@ export default function SignupPage() {
     outline: 'none',
     boxSizing: 'border-box',
     color: '#1a1a1a',
+    textAlign: isRTL ? 'right' : 'left',
+    direction: isRTL ? 'rtl' : 'ltr',
   }
 
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#e91e8c' }
@@ -32,9 +38,8 @@ export default function SignupPage() {
     e.preventDefault()
     setError(null)
 
-    // Validate
-    if (!fullName.trim()) { setError('Please enter your full name.'); return }
-    if (!phone.trim())    { setError('Phone number is required.'); return }
+    if (!fullName.trim()) { setError(t('onboarding', 'err_name')); return }
+    if (!phone.trim())    { setError(t('onboarding', 'err_phone')); return }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
 
     setLoading(true)
@@ -42,8 +47,6 @@ export default function SignupPage() {
     try {
       const supabase = createClient()
 
-      // Sign up — profile is created automatically by a DB trigger (handle_new_user)
-      // We pass full_name, phone, role in metadata so the trigger can use them
       const { data, error: authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -69,7 +72,6 @@ export default function SignupPage() {
         return
       }
 
-      // If session exists immediately (email confirmation disabled) → try to update profile
       if (data.session) {
         await supabase.from('profiles').upsert({
           id: data.user.id,
@@ -79,7 +81,6 @@ export default function SignupPage() {
         }, { onConflict: 'id' })
         window.location.href = '/onboarding'
       } else {
-        // Email confirmation required → show verify screen
         window.location.href = '/verify-email'
       }
 
@@ -89,9 +90,37 @@ export default function SignupPage() {
     }
   }
 
-  return (
-    <div style={{ minHeight: '100dvh', background: '#f7f7f7', display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto' }}>
+  const LANG_BUTTONS: { code: Language; label: string }[] = [
+    { code: 'en', label: 'EN' },
+    { code: 'ar', label: 'عربي' },
+    { code: 'ur', label: 'اردو' },
+  ]
 
+  const LanguageSwitcher = () => (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingTop: 8 }}>
+      {LANG_BUTTONS.map(({ code, label }) => (
+        <button
+          key={code}
+          onClick={() => setLanguage(code)}
+          style={{
+            padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+            border: lang === code ? '2px solid #e91e8c' : '2px solid #e8e8e8',
+            background: lang === code ? '#fce4ec' : 'white',
+            color: lang === code ? '#e91e8c' : '#9e9e9e',
+            cursor: 'pointer',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+
+  return (
+    <div
+      dir={isRTL ? 'rtl' : 'ltr'}
+      style={{ minHeight: '100dvh', background: '#f7f7f7', display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto' }}
+    >
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #e91e8c 0%, #f06292 100%)',
@@ -104,10 +133,10 @@ export default function SignupPage() {
           fontSize: 36, marginBottom: 4,
         }}>✂️</div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'white', margin: 0, textAlign: 'center' }}>
-          Join as a Tailor
+          {t('auth', 'signup_title')}
         </h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', margin: 0, textAlign: 'center' }}>
-          Start accepting orders on Tarzi today
+          {t('auth', 'signup_subtitle')}
         </p>
       </div>
 
@@ -118,8 +147,12 @@ export default function SignupPage() {
         display: 'flex', flexDirection: 'column', gap: 20,
       }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>Create your account</h2>
-          <p style={{ fontSize: 13, color: '#9e9e9e', margin: '4px 0 0' }}>Fill in your details to get started</p>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('auth', 'create_btn')}
+          </h2>
+          <p style={{ fontSize: 13, color: '#9e9e9e', margin: '4px 0 0', textAlign: isRTL ? 'right' : 'left' }}>
+            {t('auth', 'signup_subtitle')}
+          </p>
         </div>
 
         {error && (
@@ -132,8 +165,8 @@ export default function SignupPage() {
 
           {/* Full Name */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a' }}>
-              Full Name <span style={{ color: '#e91e8c' }}>*</span>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a', textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'full_name')} <span style={{ color: '#e91e8c' }}>*</span>
             </label>
             <input type="text" placeholder="Ahmed Al Rashidi" value={fullName}
               onChange={e => setFullName(e.target.value)} onFocus={onFocus} onBlur={onBlur}
@@ -142,8 +175,8 @@ export default function SignupPage() {
 
           {/* Email */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a' }}>
-              Email Address <span style={{ color: '#e91e8c' }}>*</span>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a', textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'email')} <span style={{ color: '#e91e8c' }}>*</span>
             </label>
             <input type="email" placeholder="your@email.com" value={email}
               onChange={e => setEmail(e.target.value)} onFocus={onFocus} onBlur={onBlur}
@@ -152,24 +185,24 @@ export default function SignupPage() {
 
           {/* Password */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a' }}>
-              Password <span style={{ color: '#e91e8c' }}>*</span>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a', textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'password')} <span style={{ color: '#e91e8c' }}>*</span>
             </label>
             <input type="password" placeholder="Min. 6 characters" value={password}
               onChange={e => setPassword(e.target.value)} onFocus={onFocus} onBlur={onBlur}
               style={inputStyle} required autoComplete="new-password" />
           </div>
 
-          {/* Phone — REQUIRED */}
+          {/* Phone */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a' }}>
-              Phone Number <span style={{ color: '#e91e8c' }}>*</span>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a', textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'phone')} <span style={{ color: '#e91e8c' }}>*</span>
             </label>
             <input type="tel" placeholder="+971 50 000 0000" value={phone}
               onChange={e => setPhone(e.target.value)} onFocus={onFocus} onBlur={onBlur}
               style={inputStyle} required autoComplete="tel" />
-            <p style={{ fontSize: 11, color: '#9e9e9e', margin: 0 }}>
-              Customers will use this to reach you for pickups
+            <p style={{ fontSize: 11, color: '#9e9e9e', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'phone_hint')}
             </p>
           </div>
 
@@ -184,18 +217,22 @@ export default function SignupPage() {
             marginTop: 4,
             boxShadow: loading ? 'none' : '0 4px 16px rgba(233,30,140,0.3)',
           }}>
-            {loading ? <><Loader2 size={18} className="animate-spin" /> Creating Account...</> : 'Create Account →'}
+            {loading
+              ? <><Loader2 size={18} className="animate-spin" /> {t('auth', 'creating')}</>
+              : t('auth', 'create_btn') + ' →'}
           </button>
         </form>
 
         <div style={{ textAlign: 'center', paddingTop: 8, borderTop: '1px solid #f5f5f5' }}>
           <p style={{ fontSize: 14, color: '#9e9e9e', margin: 0 }}>
-            Already have an account?{' '}
+            {t('auth', 'have_account')}{' '}
             <Link href="/login" style={{ color: '#e91e8c', fontWeight: 700, textDecoration: 'none' }}>
-              Sign In
+              {t('auth', 'sign_in')}
             </Link>
           </p>
         </div>
+
+        <LanguageSwitcher />
       </div>
     </div>
   )

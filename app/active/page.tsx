@@ -8,17 +8,12 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import BottomNav from '@/components/layout/BottomNav'
 import type { Order } from '@/types/database'
 
 type ActiveStatus = 'confirmed' | 'in_progress' | 'ready'
 type Tab = ActiveStatus
-
-const TAB_CONFIG: { key: Tab; label: string; color: string }[] = [
-  { key: 'confirmed',   label: 'Confirmed',   color: '#1565c0' },
-  { key: 'in_progress', label: 'In Progress', color: '#7b1fa2' },
-  { key: 'ready',       label: 'Ready',       color: '#2e7d32' },
-]
 
 const STATUS_STEPS: Order['status'][] = ['confirmed', 'in_progress', 'ready', 'delivered']
 
@@ -28,9 +23,8 @@ function ServiceIcon({ type }: { type: Order['service_type'] }) {
   return <RefreshCw size={16} color="#e91e8c" />
 }
 
-function ProgressDots({ status }: { status: Order['status'] }) {
+function ProgressDots({ status, labels }: { status: Order['status']; labels: string[] }) {
   const currentIdx = STATUS_STEPS.indexOf(status)
-  const labels = ['Confirmed', 'In Progress', 'Ready', 'Delivered']
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: 10 }}>
       {STATUS_STEPS.map((step, i) => {
@@ -78,6 +72,7 @@ interface ActiveOrderCardProps {
 
 function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
   const router = useRouter()
+  const { t, isRTL } = useLanguage()
   const [updating, setUpdating] = useState(false)
 
   const handleStatusUpdate = async (newStatus: Order['status']) => {
@@ -93,12 +88,19 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
 
   const actionConfig: { label: string; next: Order['status']; color: string; icon: React.ReactNode } | null =
     order.status === 'confirmed'
-      ? { label: 'Start Work', next: 'in_progress', color: '#7b1fa2', icon: <Play size={14} color="white" fill="white" /> }
+      ? { label: t('orders', 'mark_progress'), next: 'in_progress', color: '#7b1fa2', icon: <Play size={14} color="white" fill="white" /> }
       : order.status === 'in_progress'
-      ? { label: 'Mark Ready', next: 'ready', color: '#2e7d32', icon: <CheckCircle size={14} color="white" /> }
+      ? { label: t('orders', 'mark_ready'), next: 'ready', color: '#2e7d32', icon: <CheckCircle size={14} color="white" /> }
       : order.status === 'ready'
-      ? { label: 'Mark Delivered', next: 'delivered', color: '#1565c0', icon: <Truck size={14} color="white" /> }
+      ? { label: t('orders', 'mark_delivered'), next: 'delivered', color: '#1565c0', icon: <Truck size={14} color="white" /> }
       : null
+
+  const progressLabels = [
+    t('orders', 'confirmed'),
+    t('orders', 'in_progress'),
+    t('orders', 'ready'),
+    t('orders', 'delivered'),
+  ]
 
   return (
     <div style={{
@@ -109,7 +111,7 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
       boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
       border: '1px solid #f5f5f5',
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         <div style={{
           width: 38,
           height: 38,
@@ -123,17 +125,17 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
           <ServiceIcon type={order.service_type} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', textTransform: 'capitalize' }}>
               {order.garment_type}
             </span>
             <span style={{ fontSize: 10, color: '#9e9e9e' }}>#{order.order_number}</span>
           </div>
           {order.customer_name && (
-            <p style={{ fontSize: 12, color: '#616161', marginTop: 2 }}>{order.customer_name}</p>
+            <p style={{ fontSize: 12, color: '#616161', marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>{order.customer_name}</p>
           )}
           {order.pickup_date && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
               <Calendar size={11} color="#9e9e9e" />
               <span style={{ fontSize: 11, color: '#9e9e9e' }}>{order.pickup_date}</span>
             </div>
@@ -141,9 +143,9 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
         </div>
       </div>
 
-      <ProgressDots status={order.status} />
+      <ProgressDots status={order.status} labels={progressLabels} />
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         <button
           onClick={() => router.push(`/chat/${order.id}`)}
           style={{
@@ -159,10 +161,11 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
             alignItems: 'center',
             gap: 4,
             flexShrink: 0,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
           }}
         >
           <MessageCircle size={13} color="#e91e8c" />
-          Chat
+          {t('orders', 'chat')}
         </button>
         {actionConfig && (
           <button
@@ -182,10 +185,11 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
             }}
           >
             {actionConfig.icon}
-            {updating ? 'Updating…' : actionConfig.label}
+            {updating ? t('common', 'loading') : actionConfig.label}
           </button>
         )}
         <button
@@ -202,7 +206,7 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
             flexShrink: 0,
           }}
         >
-          Details
+          {t('orders', 'view_details')}
         </button>
       </div>
     </div>
@@ -211,9 +215,16 @@ function ActiveOrderCard({ order, onUpdate }: ActiveOrderCardProps) {
 
 export default function ActivePage() {
   const { user } = useApp()
+  const { t, isRTL } = useLanguage()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('confirmed')
+
+  const TAB_CONFIG: { key: Tab; label: string; color: string }[] = [
+    { key: 'confirmed',   label: t('orders', 'confirmed'),   color: '#1565c0' },
+    { key: 'in_progress', label: t('orders', 'in_progress'), color: '#7b1fa2' },
+    { key: 'ready',       label: t('orders', 'ready'),       color: '#2e7d32' },
+  ]
 
   useEffect(() => {
     if (!user) return
@@ -268,18 +279,20 @@ export default function ActivePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }} dir={isRTL ? 'rtl' : undefined}>
       {/* Pink gradient header */}
       <div style={{
         background: 'linear-gradient(135deg, #e91e8c 0%, #ff6bb3 100%)',
         padding: '52px 20px 24px',
       }}>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white' }}>Active Orders</h1>
-        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
-          Track your in-progress work
+        <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', textAlign: isRTL ? 'right' : 'left' }}>
+          {t('orders', 'active')}
+        </h1>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+          {t('orders', 'no_active_sub')}
         </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          {TAB_CONFIG.map(({ key, label, color }) => (
+        <div style={{ display: 'flex', gap: 10, marginTop: 16, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+          {TAB_CONFIG.map(({ key, label }) => (
             <div key={key} style={{
               background: 'rgba(255,255,255,0.2)',
               borderRadius: 10,
@@ -299,6 +312,7 @@ export default function ActivePage() {
         borderBottom: '1px solid #f0f0f0',
         display: 'flex',
         padding: '0 4px',
+        flexDirection: isRTL ? 'row-reverse' : 'row',
       }}>
         {TAB_CONFIG.map(({ key, label, color }) => (
           <button
@@ -350,7 +364,7 @@ export default function ActivePage() {
               animation: 'spin 0.8s linear infinite',
               margin: '0 auto',
             }} />
-            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>Loading active orders…</p>
+            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>{t('common', 'loading')}</p>
           </div>
         ) : displayed.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -363,10 +377,10 @@ export default function ActivePage() {
               <Package size={28} color="#e91e8c" />
             </div>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
-              No {TAB_CONFIG.find(t => t.key === tab)?.label.toLowerCase()} orders
+              {t('orders', 'no_active')}
             </p>
             <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 4 }}>
-              Orders in this stage will appear here.
+              {t('orders', 'no_active_sub')}
             </p>
           </div>
         ) : (

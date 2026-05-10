@@ -4,7 +4,8 @@ import { use, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
-import { ArrowLeft, ArrowUp, Loader2 } from 'lucide-react'
+import { useLanguage } from '@/lib/context/LanguageContext'
+import { ArrowLeft, ArrowRight, ArrowUp, Loader2 } from 'lucide-react'
 import type { Order, ChatMessage } from '@/types/database'
 
 function formatTime(dateStr: string): string {
@@ -15,28 +16,19 @@ function formatTime(dateStr: string): string {
   })
 }
 
-function formatDateLabel(dateStr: string): string {
+function formatDateLabel(dateStr: string, todayLabel: string, yesterdayLabel: string): string {
   const date = new Date(dateStr)
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(today.getDate() - 1)
 
-  if (date.toDateString() === today.toDateString()) return 'Today'
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  if (date.toDateString() === today.toDateString()) return todayLabel
+  if (date.toDateString() === yesterday.toDateString()) return yesterdayLabel
   return date.toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function isSameDay(a: string, b: string): boolean {
   return new Date(a).toDateString() === new Date(b).toDateString()
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending',
-  confirmed: 'Confirmed',
-  in_progress: 'In Progress',
-  ready: 'Ready',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -52,6 +44,7 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
   const { orderId } = use(params)
   const router = useRouter()
   const { user, profile, loading: authLoading } = useApp()
+  const { t, isRTL } = useLanguage()
   const [order, setOrder] = useState<Order | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [text, setText] = useState('')
@@ -60,6 +53,16 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
   const [error, setError] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Build STATUS_LABELS from t()
+  const STATUS_LABELS: Record<string, string> = {
+    pending: t('orders', 'pending'),
+    confirmed: t('orders', 'confirmed'),
+    in_progress: t('orders', 'in_progress'),
+    ready: t('orders', 'ready'),
+    delivered: t('orders', 'delivered'),
+    cancelled: t('orders', 'cancelled'),
+  }
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login')
@@ -180,8 +183,11 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
     )
   }
 
+  const BackArrow = isRTL ? ArrowRight : ArrowLeft
+
   return (
     <div
+      dir={isRTL ? 'rtl' : undefined}
       style={{
         height: '100dvh',
         maxWidth: 430,
@@ -204,7 +210,7 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
           <button
             onClick={() => router.back()}
             style={{
@@ -220,11 +226,11 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
               flexShrink: 0,
             }}
           >
-            <ArrowLeft size={18} color="#1a1a1a" />
+            <BackArrow size={18} color="#1a1a1a" />
           </button>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: isRTL ? 'right' : 'left' }}>
             <p style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {order ? `${order.garment_type} — #${order.order_number}` : 'Chat'}
+              {order ? `${order.garment_type} — #${order.order_number}` : t('chat', 'title')}
             </p>
             {order && statusInfo && (
               <span
@@ -259,7 +265,8 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
       >
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', paddingTop: 40 }}>
-            <p style={{ fontSize: 14, color: '#bdbdbd' }}>No messages yet. Start the conversation!</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 }}>{t('chat', 'start')}</p>
+            <p style={{ fontSize: 13, color: '#bdbdbd' }}>{t('chat', 'start_sub')}</p>
           </div>
         )}
 
@@ -281,7 +288,7 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
                 >
                   <div style={{ flex: 1, height: 1, background: '#e0e0e0' }} />
                   <span style={{ fontSize: 11, color: '#9e9e9e', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    {formatDateLabel(msg.created_at)}
+                    {formatDateLabel(msg.created_at, t('chat', 'today'), t('chat', 'yesterday'))}
                   </span>
                   <div style={{ flex: 1, height: 1, background: '#e0e0e0' }} />
                 </div>
@@ -291,12 +298,12 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: isMine ? 'flex-end' : 'flex-start',
+                  alignItems: isMine ? (isRTL ? 'flex-start' : 'flex-end') : (isRTL ? 'flex-end' : 'flex-start'),
                   marginBottom: 8,
                 }}
               >
                 {!isMine && msg.sender_name && (
-                  <span style={{ fontSize: 11, color: '#9e9e9e', marginBottom: 3, marginLeft: 4, fontWeight: 600 }}>
+                  <span style={{ fontSize: 11, color: '#9e9e9e', marginBottom: 3, [isRTL ? 'marginRight' : 'marginLeft']: 4, fontWeight: 600 }}>
                     {msg.sender_name}
                   </span>
                 )}
@@ -304,7 +311,9 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
                   style={{
                     maxWidth: '75%',
                     padding: '10px 14px',
-                    borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    borderRadius: isMine
+                      ? (isRTL ? '18px 18px 18px 4px' : '18px 18px 4px 18px')
+                      : (isRTL ? '18px 18px 4px 18px' : '18px 18px 18px 4px'),
                     background: isMine ? 'linear-gradient(135deg, #e91e8c, #f06292)' : 'white',
                     border: isMine ? 'none' : '1.5px solid #f0f0f0',
                     color: isMine ? 'white' : '#1a1a1a',
@@ -312,6 +321,7 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
                     lineHeight: 1.5,
                     wordBreak: 'break-word',
                     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                    textAlign: isRTL ? 'right' : 'left',
                   }}
                 >
                   {msg.message}
@@ -338,7 +348,7 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
         }}
       >
         {error && (
-          <p style={{ fontSize: 12, color: '#dc2626', margin: '0 0 6px 4px' }}>{error}</p>
+          <p style={{ fontSize: 12, color: '#dc2626', margin: '0 0 6px 4px', textAlign: isRTL ? 'right' : 'left' }}>{error}</p>
         )}
         {isCancelled ? (
           <div
@@ -351,17 +361,17 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
             }}
           >
             <p style={{ fontSize: 13, color: '#9e9e9e', margin: 0 }}>
-              You can&apos;t send messages on cancelled orders
+              {t('orders', 'cancelled')}
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <textarea
               ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message…"
+              placeholder={t('chat', 'type_msg')}
               rows={1}
               style={{
                 flex: 1,
@@ -377,11 +387,14 @@ export default function ChatThreadPage({ params }: { params: Promise<{ orderId: 
                 overflow: 'hidden',
                 maxHeight: 100,
                 fontFamily: 'inherit',
+                textAlign: isRTL ? 'right' : 'left',
+                direction: isRTL ? 'rtl' : 'ltr',
               }}
             />
             <button
               onClick={sendMessage}
               disabled={!text.trim() || sending}
+              aria-label={t('chat', 'send')}
               style={{
                 width: 40,
                 height: 40,

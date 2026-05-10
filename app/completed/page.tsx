@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import BottomNav from '@/components/layout/BottomNav'
 import type { Order } from '@/types/database'
 
@@ -18,7 +19,13 @@ function ServiceIcon({ type }: { type: Order['service_type'] }) {
   return <RefreshCw size={15} color="#e91e8c" />
 }
 
-function CompletedCard({ order }: { order: Order }) {
+function CompletedCard({ order, isRTL, tDelivered, tCancelled, tAed }: {
+  order: Order
+  isRTL: boolean
+  tDelivered: string
+  tCancelled: string
+  tAed: string
+}) {
   const isDelivered = order.status === 'delivered'
   const date = order.updated_at
     ? new Date(order.updated_at).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -35,6 +42,7 @@ function CompletedCard({ order }: { order: Order }) {
       display: 'flex',
       gap: 12,
       alignItems: 'flex-start',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
     }}>
       <div style={{
         width: 40,
@@ -53,26 +61,26 @@ function CompletedCard({ order }: { order: Order }) {
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
           <span style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', textTransform: 'capitalize' }}>
             {order.garment_type}
           </span>
           {isDelivered && order.tailor_price != null && (
-            <span style={{ fontSize: 14, fontWeight: 900, color: '#2e7d32', flexShrink: 0, marginLeft: 8 }}>
-              AED {order.tailor_price}
+            <span style={{ fontSize: 14, fontWeight: 900, color: '#2e7d32', flexShrink: 0, marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}>
+              {tAed} {order.tailor_price}
             </span>
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <ServiceIcon type={order.service_type} />
             <span style={{ fontSize: 11, color: '#9e9e9e', textTransform: 'capitalize' }}>
               {order.service_type.replace('_', ' ')}
             </span>
           </div>
           <span style={{ fontSize: 10, color: '#bdbdbd' }}>•</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <Calendar size={11} color="#9e9e9e" />
             <span style={{ fontSize: 11, color: '#9e9e9e' }}>{date}</span>
           </div>
@@ -81,8 +89,8 @@ function CompletedCard({ order }: { order: Order }) {
         <p style={{ fontSize: 10, color: '#bdbdbd', marginTop: 4 }}>#{order.order_number}</p>
 
         {!isDelivered && order.decline_reason && (
-          <p style={{ fontSize: 11, color: '#d32f2f', marginTop: 4, fontStyle: 'italic' }}>
-            Reason: {order.decline_reason}
+          <p style={{ fontSize: 11, color: '#d32f2f', marginTop: 4, fontStyle: 'italic', textAlign: isRTL ? 'right' : 'left' }}>
+            {order.decline_reason}
           </p>
         )}
       </div>
@@ -92,6 +100,7 @@ function CompletedCard({ order }: { order: Order }) {
 
 export default function CompletedPage() {
   const { user } = useApp()
+  const { t, isRTL } = useLanguage()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('delivered')
@@ -119,12 +128,20 @@ export default function CompletedPage() {
 
   const displayed = tab === 'delivered' ? delivered : cancelled
 
+  const labelDelivered = t('orders', 'delivered')
+  const labelCancelled = t('orders', 'cancelled')
+  const labelAed = t('common', 'aed')
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }} dir={isRTL ? 'rtl' : undefined}>
       {/* Header */}
       <div style={{ background: 'white', padding: '52px 20px 16px', borderBottom: '1px solid #f0f0f0' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: '#1a1a1a' }}>Completed Orders</h1>
-        <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 2 }}>Your history</p>
+        <h1 style={{ fontSize: 24, fontWeight: 900, color: '#1a1a1a', textAlign: isRTL ? 'right' : 'left' }}>
+          {t('orders', 'completed')}
+        </h1>
+        <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+          {t('orders', 'no_done')}
+        </p>
       </div>
 
       {/* Stats bar */}
@@ -133,21 +150,22 @@ export default function CompletedPage() {
         padding: '16px 20px',
         display: 'flex',
         gap: 0,
+        flexDirection: isRTL ? 'row-reverse' : 'row',
       }}>
-        <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.3)' }}>
+        <div style={{ flex: 1, textAlign: 'center', borderRight: isRTL ? 'none' : '1px solid rgba(255,255,255,0.3)', borderLeft: isRTL ? '1px solid rgba(255,255,255,0.3)' : 'none' }}>
           <p style={{ fontSize: 22, fontWeight: 900, color: 'white' }}>{delivered.length}</p>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 1 }}>Delivered</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 1 }}>{labelDelivered}</p>
         </div>
-        <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.3)' }}>
+        <div style={{ flex: 1, textAlign: 'center', borderRight: isRTL ? 'none' : '1px solid rgba(255,255,255,0.3)', borderLeft: isRTL ? '1px solid rgba(255,255,255,0.3)' : 'none' }}>
           <p style={{ fontSize: 22, fontWeight: 900, color: 'white' }}>{cancelled.length}</p>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 1 }}>Cancelled</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 1 }}>{labelCancelled}</p>
         </div>
         <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <TrendingUp size={14} color="white" />
             <p style={{ fontSize: 18, fontWeight: 900, color: 'white' }}>{totalEarned.toLocaleString()}</p>
           </div>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 1 }}>AED Earned</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 1 }}>{labelAed} {t('home', 'earnings')}</p>
         </div>
       </div>
 
@@ -156,21 +174,22 @@ export default function CompletedPage() {
         background: 'white',
         borderBottom: '1px solid #f0f0f0',
         display: 'flex',
+        flexDirection: isRTL ? 'row-reverse' : 'row',
       }}>
-        {(['delivered', 'cancelled'] as Tab[]).map(t => (
+        {(['delivered', 'cancelled'] as Tab[]).map(tabKey => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             style={{
               flex: 1,
               padding: '14px 0',
               fontSize: 14,
               fontWeight: 700,
-              color: tab === t ? (t === 'delivered' ? '#2e7d32' : '#d32f2f') : '#9e9e9e',
+              color: tab === tabKey ? (tabKey === 'delivered' ? '#2e7d32' : '#d32f2f') : '#9e9e9e',
               background: 'transparent',
               border: 'none',
-              borderBottom: tab === t
-                ? `2px solid ${t === 'delivered' ? '#2e7d32' : '#d32f2f'}`
+              borderBottom: tab === tabKey
+                ? `2px solid ${tabKey === 'delivered' ? '#2e7d32' : '#d32f2f'}`
                 : '2px solid transparent',
               cursor: 'pointer',
               marginBottom: -1,
@@ -178,22 +197,23 @@ export default function CompletedPage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
             }}
           >
-            {t === 'delivered'
-              ? <CheckCircle size={15} color={tab === t ? '#2e7d32' : '#bdbdbd'} />
-              : <XCircle size={15} color={tab === t ? '#d32f2f' : '#bdbdbd'} />
+            {tabKey === 'delivered'
+              ? <CheckCircle size={15} color={tab === tabKey ? '#2e7d32' : '#bdbdbd'} />
+              : <XCircle size={15} color={tab === tabKey ? '#d32f2f' : '#bdbdbd'} />
             }
-            {t === 'delivered' ? 'Delivered' : 'Cancelled'}
+            {tabKey === 'delivered' ? labelDelivered : labelCancelled}
             <span style={{
               fontSize: 11,
               fontWeight: 800,
-              background: tab === t ? (t === 'delivered' ? '#e8f5e9' : '#fff0f0') : '#f5f5f5',
-              color: tab === t ? (t === 'delivered' ? '#2e7d32' : '#d32f2f') : '#9e9e9e',
+              background: tab === tabKey ? (tabKey === 'delivered' ? '#e8f5e9' : '#fff0f0') : '#f5f5f5',
+              color: tab === tabKey ? (tabKey === 'delivered' ? '#2e7d32' : '#d32f2f') : '#9e9e9e',
               borderRadius: 10,
               padding: '1px 7px',
             }}>
-              {t === 'delivered' ? delivered.length : cancelled.length}
+              {tabKey === 'delivered' ? delivered.length : cancelled.length}
             </span>
           </button>
         ))}
@@ -211,7 +231,7 @@ export default function CompletedPage() {
               animation: 'spin 0.8s linear infinite',
               margin: '0 auto',
             }} />
-            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>Loading history…</p>
+            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>{t('common', 'loading')}</p>
           </div>
         ) : displayed.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -224,12 +244,12 @@ export default function CompletedPage() {
               <Package size={28} color="#bdbdbd" />
             </div>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
-              No {tab === 'delivered' ? 'delivered' : 'cancelled'} orders
+              {tab === 'delivered' ? t('orders', 'no_done') : t('orders', 'no_new')}
             </p>
             <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 4 }}>
               {tab === 'delivered'
-                ? 'Orders you deliver will appear here.'
-                : 'Cancelled orders will appear here.'
+                ? t('orders', 'no_done')
+                : t('orders', 'no_new_sub')
               }
             </p>
           </div>
@@ -245,16 +265,26 @@ export default function CompletedPage() {
                 alignItems: 'center',
                 gap: 10,
                 border: '1px solid #a5d6a7',
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}>
                 <TrendingUp size={18} color="#2e7d32" />
-                <div>
-                  <p style={{ fontSize: 12, color: '#388e3c', fontWeight: 600 }}>Total Earned from {delivered.length} order{delivered.length !== 1 ? 's' : ''}</p>
-                  <p style={{ fontSize: 20, fontWeight: 900, color: '#2e7d32' }}>AED {totalEarned.toLocaleString()}</p>
+                <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
+                  <p style={{ fontSize: 12, color: '#388e3c', fontWeight: 600 }}>
+                    {labelAed} {t('home', 'earnings')} — {delivered.length} {t('orders', 'completed')}
+                  </p>
+                  <p style={{ fontSize: 20, fontWeight: 900, color: '#2e7d32' }}>{labelAed} {totalEarned.toLocaleString()}</p>
                 </div>
               </div>
             )}
             {displayed.map(order => (
-              <CompletedCard key={order.id} order={order} />
+              <CompletedCard
+                key={order.id}
+                order={order}
+                isRTL={isRTL}
+                tDelivered={labelDelivered}
+                tCancelled={labelCancelled}
+                tAed={labelAed}
+              />
             ))}
           </>
         )}

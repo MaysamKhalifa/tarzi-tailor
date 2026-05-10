@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { useLanguage } from '@/lib/context/LanguageContext'
 
 type Status = 'loading' | 'success' | 'error'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
+  const { t, isRTL } = useLanguage()
   const [status, setStatus] = useState<Status>('loading')
   const [message, setMessage] = useState('')
 
@@ -93,12 +95,15 @@ export default function AuthCallbackPage() {
   }, [router])
 
   return (
-    <div style={{
-      minHeight: '100dvh', maxWidth: 430, margin: '0 auto',
-      background: 'white', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: '40px 32px',
-      textAlign: 'center',
-    }}>
+    <div
+      dir={isRTL ? 'rtl' : 'ltr'}
+      style={{
+        minHeight: '100dvh', maxWidth: 430, margin: '0 auto',
+        background: 'white', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: '40px 32px',
+        textAlign: 'center',
+      }}
+    >
       {status === 'loading' && (
         <>
           <div style={{
@@ -109,10 +114,10 @@ export default function AuthCallbackPage() {
             <Loader2 size={40} color="#e91e8c" style={{ animation: 'spin 1s linear infinite' }} />
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: '0 0 10px' }}>
-            Verifying your email…
+            {t('auth', 'verifying')}
           </h2>
           <p style={{ fontSize: 14, color: '#9e9e9e', lineHeight: 1.6 }}>
-            Please wait while we confirm your account
+            {t('auth', 'please_wait')}
           </p>
           <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </>
@@ -128,10 +133,10 @@ export default function AuthCallbackPage() {
             <CheckCircle size={44} color="#2e7d32" />
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: '0 0 10px' }}>
-            Email verified! ✓
+            {t('auth', 'verified_title')}
           </h2>
           <p style={{ fontSize: 14, color: '#616161', lineHeight: 1.6 }}>
-            Your account is confirmed. Setting up your profile…
+            {t('auth', 'verified_sub')}
           </p>
         </>
       )}
@@ -146,10 +151,10 @@ export default function AuthCallbackPage() {
             <XCircle size={44} color="#d32f2f" />
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: '0 0 10px' }}>
-            Verification failed
+            {t('auth', 'failed_title')}
           </h2>
           <p style={{ fontSize: 14, color: '#757575', lineHeight: 1.6, margin: '0 0 28px' }}>
-            {message || 'The link may have expired. Please request a new one.'}
+            {message || t('auth', 'failed_sub')}
           </p>
           <button
             onClick={() => router.replace('/login')}
@@ -159,7 +164,7 @@ export default function AuthCallbackPage() {
               color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer',
               boxShadow: '0 4px 14px rgba(233,30,140,0.25)',
             }}>
-            Back to Sign In
+            {t('auth', 'back_signin')}
           </button>
         </>
       )}

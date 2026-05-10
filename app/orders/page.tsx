@@ -5,18 +5,24 @@ import { useRouter } from 'next/navigation'
 import { Scissors, Sparkles, RefreshCw, Calendar, Clock, DollarSign, FileText, ChevronRight, CheckCircle, Package } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import BottomNav from '@/components/layout/BottomNav'
 import type { Order } from '@/types/database'
 
 type Tab = 'new' | 'all'
 
-const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
-  pending:     { color: '#f57c00', bg: '#fff3e0', label: 'Pending' },
-  confirmed:   { color: '#1565c0', bg: '#e3f2fd', label: 'Confirmed' },
-  in_progress: { color: '#7b1fa2', bg: '#f3e5f5', label: 'In Progress' },
-  ready:       { color: '#2e7d32', bg: '#e8f5e9', label: 'Ready' },
-  delivered:   { color: '#2e7d32', bg: '#e8f5e9', label: 'Delivered' },
-  cancelled:   { color: '#d32f2f', bg: '#fff0f0', label: 'Cancelled' },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getStatusStyle(status: string, t: (s: 'orders', k: any) => string): { color: string; bg: string; label: string } {
+  const map: Record<string, { color: string; bg: string; labelKey: string }> = {
+    pending:     { color: '#f57c00', bg: '#fff3e0', labelKey: 'pending' },
+    confirmed:   { color: '#1565c0', bg: '#e3f2fd', labelKey: 'confirmed' },
+    in_progress: { color: '#7b1fa2', bg: '#f3e5f5', labelKey: 'in_progress' },
+    ready:       { color: '#2e7d32', bg: '#e8f5e9', labelKey: 'ready' },
+    delivered:   { color: '#2e7d32', bg: '#e8f5e9', labelKey: 'delivered' },
+    cancelled:   { color: '#d32f2f', bg: '#fff0f0', labelKey: 'cancelled' },
+  }
+  const entry = map[status] ?? map.pending
+  return { color: entry.color, bg: entry.bg, label: t('orders', entry.labelKey) }
 }
 
 function ServiceIcon({ type }: { type: Order['service_type'] }) {
@@ -33,6 +39,7 @@ interface QuickAcceptFormProps {
 
 function QuickAcceptForm({ orderId, onSuccess, onCancel }: QuickAcceptFormProps) {
   const { user } = useApp()
+  const { t, isRTL } = useLanguage()
   const [price, setPrice] = useState('')
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
@@ -65,6 +72,7 @@ function QuickAcceptForm({ orderId, onSuccess, onCancel }: QuickAcceptFormProps)
 
   return (
     <div
+      dir={isRTL ? 'rtl' : undefined}
       style={{
         marginTop: 10,
         background: '#fdf2f8',
@@ -73,47 +81,47 @@ function QuickAcceptForm({ orderId, onSuccess, onCancel }: QuickAcceptFormProps)
         border: '1px solid #f8bbd9',
       }}
     >
-      <p style={{ fontSize: 12, fontWeight: 700, color: '#e91e8c', marginBottom: 8 }}>
-        Quick Accept
+      <p style={{ fontSize: 12, fontWeight: 700, color: '#e91e8c', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+        {t('orders', 'set_price')}
       </p>
       <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 11, color: '#757575', fontWeight: 600 }}>Price (AED) *</label>
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: 4, background: 'white', borderRadius: 8, border: '1px solid #f0f0f0', padding: '8px 10px', gap: 6 }}>
-          <span style={{ fontSize: 13, color: '#9e9e9e', fontWeight: 600 }}>AED</span>
+        <label style={{ fontSize: 11, color: '#757575', fontWeight: 600 }}>{t('orders', 'your_price')} *</label>
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 4, background: 'white', borderRadius: 8, border: '1px solid #f0f0f0', padding: '8px 10px', gap: 6, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+          <span style={{ fontSize: 13, color: '#9e9e9e', fontWeight: 600 }}>{t('common', 'aed')}</span>
           <input
             type="number"
             value={price}
             onChange={e => setPrice(e.target.value)}
             placeholder="0"
             min="0"
-            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, fontWeight: 700, color: '#1a1a1a', background: 'transparent' }}
+            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, fontWeight: 700, color: '#1a1a1a', background: 'transparent', textAlign: isRTL ? 'right' : 'left' }}
           />
         </div>
       </div>
       <div style={{ marginBottom: 10 }}>
-        <label style={{ fontSize: 11, color: '#757575', fontWeight: 600 }}>Note to Customer (optional)</label>
+        <label style={{ fontSize: 11, color: '#757575', fontWeight: 600 }}>{t('orders', 'your_note')}</label>
         <textarea
           value={note}
           onChange={e => setNote(e.target.value)}
           placeholder="Any notes..."
           rows={2}
-          style={{ marginTop: 4, width: '100%', background: 'white', border: '1px solid #f0f0f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#1a1a1a', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
+          style={{ marginTop: 4, width: '100%', background: 'white', border: '1px solid #f0f0f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#1a1a1a', resize: 'none', outline: 'none', boxSizing: 'border-box', textAlign: isRTL ? 'right' : 'left' }}
         />
       </div>
       {error && <p style={{ fontSize: 12, color: '#d32f2f', marginBottom: 8 }}>{error}</p>}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         <button
           onClick={onCancel}
           style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid #e0e0e0', background: 'white', fontSize: 13, fontWeight: 600, color: '#757575', cursor: 'pointer' }}
         >
-          Cancel
+          {t('common', 'cancel')}
         </button>
         <button
           onClick={handleAccept}
           disabled={loading}
           style={{ flex: 2, padding: '9px 0', borderRadius: 8, border: 'none', background: loading ? '#f8bbd9' : '#e91e8c', fontSize: 13, fontWeight: 700, color: 'white', cursor: loading ? 'not-allowed' : 'pointer' }}
         >
-          {loading ? 'Accepting…' : 'Confirm Acceptance'}
+          {loading ? t('common', 'loading') : t('orders', 'confirm_btn')}
         </button>
       </div>
     </div>
@@ -127,11 +135,13 @@ interface OrderCardProps {
 
 function OrderCard({ order, onRefresh }: OrderCardProps) {
   const router = useRouter()
+  const { t, isRTL } = useLanguage()
   const [showAccept, setShowAccept] = useState(false)
-  const s = STATUS_STYLE[order.status] ?? STATUS_STYLE.pending
+  const s = getStatusStyle(order.status, t)
 
   return (
     <div
+      dir={isRTL ? 'rtl' : undefined}
       style={{
         background: 'white',
         borderRadius: 16,
@@ -141,7 +151,7 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
         border: '1px solid #f5f5f5',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         <div
           style={{
             width: 40,
@@ -157,7 +167,7 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
           <ServiceIcon type={order.service_type} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', textTransform: 'capitalize' }}>
               {order.garment_type}
             </span>
@@ -175,35 +185,35 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
               {s.label}
             </span>
           </div>
-          <p style={{ fontSize: 11, color: '#9e9e9e', marginTop: 1 }}>#{order.order_number}</p>
+          <p style={{ fontSize: 11, color: '#9e9e9e', marginTop: 1, textAlign: isRTL ? 'right' : 'left' }}>#{order.order_number}</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 8 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         {order.pickup_date && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <Calendar size={12} color="#9e9e9e" />
             <span style={{ fontSize: 12, color: '#616161' }}>{order.pickup_date}</span>
           </div>
         )}
         {order.pickup_time && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <Clock size={12} color="#9e9e9e" />
             <span style={{ fontSize: 12, color: '#616161' }}>{order.pickup_time}</span>
           </div>
         )}
         {order.tailor_price != null && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <DollarSign size={12} color="#9e9e9e" />
-            <span style={{ fontSize: 12, color: '#616161', fontWeight: 700 }}>AED {order.tailor_price}</span>
+            <span style={{ fontSize: 12, color: '#616161', fontWeight: 700 }}>{t('common', 'aed')} {order.tailor_price}</span>
           </div>
         )}
       </div>
 
       {order.comments && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
           <FileText size={12} color="#bdbdbd" style={{ marginTop: 2 }} />
-          <p style={{ fontSize: 12, color: '#757575', fontStyle: 'italic', lineHeight: 1.4 }}>
+          <p style={{ fontSize: 12, color: '#757575', fontStyle: 'italic', lineHeight: 1.4, textAlign: isRTL ? 'right' : 'left' }}>
             {order.comments.length > 60 ? order.comments.slice(0, 60) + '…' : order.comments}
           </p>
         </div>
@@ -216,7 +226,7 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
           onCancel={() => setShowAccept(false)}
         />
       ) : (
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
           <button
             onClick={() => router.push(`/orders/${order.id}`)}
             style={{
@@ -233,10 +243,11 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
             }}
           >
-            View Details
-            <ChevronRight size={14} color="#e91e8c" />
+            {t('orders', 'view_details')}
+            <ChevronRight size={14} color="#e91e8c" style={{ transform: isRTL ? 'scaleX(-1)' : undefined }} />
           </button>
           {order.status === 'pending' && (
             <button
@@ -255,10 +266,11 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 4,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <CheckCircle size={14} color="white" />
-              Quick Accept
+              {t('orders', 'accept')}
             </button>
           )}
         </div>
@@ -269,6 +281,7 @@ function OrderCard({ order, onRefresh }: OrderCardProps) {
 
 export default function OrdersPage() {
   const { user } = useApp()
+  const { t, isRTL } = useLanguage()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('new')
@@ -315,7 +328,7 @@ export default function OrdersPage() {
   const newCount = orders.filter(o => o.status === 'pending').length
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }}>
+    <div dir={isRTL ? 'rtl' : undefined} style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }}>
       {/* Pink gradient header */}
       <div
         style={{
@@ -323,27 +336,29 @@ export default function OrdersPage() {
           padding: '52px 20px 24px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white' }}>New Orders</h1>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
-              Manage incoming requests
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', textAlign: isRTL ? 'right' : 'left' }}>{t('orders', 'title')}</h1>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('orders', 'no_new_sub')}
             </p>
           </div>
           {newCount > 0 && (
             <div
               style={{
-                marginLeft: 'auto',
+                marginLeft: isRTL ? undefined : 'auto',
+                marginRight: isRTL ? 'auto' : undefined,
                 background: 'white',
                 borderRadius: 20,
                 padding: '4px 14px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <span style={{ fontSize: 20, fontWeight: 900, color: '#e91e8c' }}>{newCount}</span>
-              <span style={{ fontSize: 11, color: '#e91e8c', fontWeight: 600 }}>new</span>
+              <span style={{ fontSize: 11, color: '#e91e8c', fontWeight: 600 }}>{t('orders', 'new')}</span>
             </div>
           )}
         </div>
@@ -357,29 +372,31 @@ export default function OrdersPage() {
           borderBottom: '1px solid #f0f0f0',
           display: 'flex',
           gap: 0,
+          flexDirection: isRTL ? 'row-reverse' : 'row',
         }}
       >
-        {(['new', 'all'] as Tab[]).map(t => (
+        {(['new', 'all'] as Tab[]).map(tabKey => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             style={{
               padding: '14px 20px',
               fontSize: 14,
               fontWeight: 700,
-              color: tab === t ? '#e91e8c' : '#9e9e9e',
+              color: tab === tabKey ? '#e91e8c' : '#9e9e9e',
               background: 'transparent',
               border: 'none',
-              borderBottom: tab === t ? '2px solid #e91e8c' : '2px solid transparent',
+              borderBottom: tab === tabKey ? '2px solid #e91e8c' : '2px solid transparent',
               cursor: 'pointer',
               marginBottom: -1,
             }}
           >
-            {t === 'new' ? 'New Requests' : 'All Orders'}
-            {t === 'new' && newCount > 0 && (
+            {tabKey === 'new' ? t('orders', 'new') : t('orders', 'title')}
+            {tabKey === 'new' && newCount > 0 && (
               <span
                 style={{
-                  marginLeft: 6,
+                  marginLeft: isRTL ? undefined : 6,
+                  marginRight: isRTL ? 6 : undefined,
                   background: '#e91e8c',
                   color: 'white',
                   borderRadius: 10,
@@ -410,7 +427,7 @@ export default function OrdersPage() {
                 margin: '0 auto',
               }}
             />
-            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>Loading orders…</p>
+            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>{t('common', 'loading')}</p>
           </div>
         ) : displayed.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -428,9 +445,11 @@ export default function OrdersPage() {
             >
               <Package size={28} color="#e91e8c" />
             </div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>No new orders yet</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
+              {tab === 'new' ? t('orders', 'no_new') : t('orders', 'no_orders')}
+            </p>
             <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 4 }}>
-              {tab === 'new' ? 'New customer requests will appear here.' : 'Your orders will appear here.'}
+              {tab === 'new' ? t('orders', 'no_new_sub') : t('orders', 'no_active_sub')}
             </p>
           </div>
         ) : (

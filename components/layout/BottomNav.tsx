@@ -3,16 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, ClipboardList, MessageCircle, User } from 'lucide-react'
-
-const NAV_ITEMS = [
-  { href: '/home',    icon: Home,          label: 'Home'    },
-  { href: '/orders',  icon: ClipboardList, label: 'Orders'  },
-  { href: '/chat',    icon: MessageCircle, label: 'Chat'    },
-  { href: '/profile', icon: User,          label: 'Profile' },
-]
+import { useLanguage } from '@/lib/context/LanguageContext'
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const { t, isRTL } = useLanguage()
+
+  const NAV_ITEMS = [
+    { href: '/home',    icon: Home,          label: t('nav', 'home')    },
+    { href: '/orders',  icon: ClipboardList, label: t('nav', 'orders')  },
+    { href: '/chat',    icon: MessageCircle, label: t('nav', 'chat')    },
+    { href: '/profile', icon: User,          label: t('nav', 'profile') },
+  ]
 
   return (
     <nav
@@ -24,7 +26,10 @@ export default function BottomNav() {
         zIndex: 50,
       }}
     >
-      <div className="flex">
+      <div
+        className="flex"
+        style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}
+      >
         {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (

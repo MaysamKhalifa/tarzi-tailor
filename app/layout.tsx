@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AppProvider } from '@/lib/context/AppContext'
+import { LanguageProvider } from '@/lib/context/LanguageContext'
 
 export const metadata: Metadata = {
   title: 'Tarzi Tailor Portal',
@@ -12,9 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AppProvider>
-          <div style={{ maxWidth: 430, margin: '0 auto', minHeight: '100dvh', background: 'white' }}>
-            {children}
-          </div>
+          <LanguageProvider>
+            <div style={{ maxWidth: 430, margin: '0 auto', minHeight: '100dvh', background: 'white' }}>
+              {children}
+            </div>
+          </LanguageProvider>
         </AppProvider>
       </body>
     </html>

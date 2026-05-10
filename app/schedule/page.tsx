@@ -7,9 +7,9 @@ import BottomNav from '@/components/layout/BottomNav'
 import PageHeader from '@/components/layout/PageHeader'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/lib/context/AppContext'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import type { Order } from '@/types/database'
 
-const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const HOURS = Array.from({ length: 17 }, (_, i) => {
   const h = i + 6
   const suffix = h >= 12 ? 'PM' : 'AM'
@@ -32,6 +32,7 @@ function getWeekDates() {
 export default function SchedulePage() {
   const { user, loading: authLoading } = useApp()
   const router = useRouter()
+  const { t, isRTL } = useLanguage()
   const [availableDays, setAvailableDays] = useState<number[]>([0, 1, 2, 3, 6]) // Mon-Thu + Sun
   const [startHour, setStartHour] = useState(9)
   const [endHour, setEndHour] = useState(18)
@@ -39,6 +40,16 @@ export default function SchedulePage() {
   const [saved, setSaved] = useState(false)
   const weekDates = getWeekDates()
   const today = new Date()
+
+  const DAY_NAMES = [
+    t('schedule', 'mon'),
+    t('schedule', 'tue'),
+    t('schedule', 'wed'),
+    t('schedule', 'thu'),
+    t('schedule', 'fri'),
+    t('schedule', 'sat'),
+    t('schedule', 'sun'),
+  ]
 
   useEffect(() => {
     if (authLoading) return
@@ -79,17 +90,17 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="min-h-dvh bg-white pb-24">
-      <PageHeader title="My Schedule" showBack={false} />
+    <div className="min-h-dvh bg-white pb-24" dir={isRTL ? 'rtl' : undefined}>
+      <PageHeader title={t('schedule', 'title')} showBack={false} />
 
       <div className="px-5 py-4 flex flex-col gap-5">
 
         {/* Week view */}
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12 }}>
-            Available Days This Week
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('schedule', 'days')}
           </h3>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1" style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             {weekDates.map((date, idx) => {
               const isToday = date.toDateString() === today.toDateString()
               const isAvail = availableDays.includes(idx)
@@ -122,14 +133,14 @@ export default function SchedulePage() {
 
         {/* Working hours */}
         <div className="p-4 rounded-2xl" style={{ background: '#f9f9f9' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12 }}>
-            <Clock size={14} style={{ display: 'inline', marginRight: 6, color: '#e91e8c' }} />
-            Working Hours
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            <Clock size={14} style={{ display: 'inline', marginRight: isRTL ? 0 : 6, marginLeft: isRTL ? 6 : 0, color: '#e91e8c' }} />
+            {t('schedule', 'working_hours')}
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 5 }}>
-                Start Time
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 5, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('schedule', 'from')}
               </label>
               <select value={startHour} onChange={e => setStartHour(Number(e.target.value))} style={selectStyle}>
                 {HOURS.filter(h => h.value < endHour).map(h => (
@@ -138,8 +149,8 @@ export default function SchedulePage() {
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 5 }}>
-                End Time
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 5, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('schedule', 'to')}
               </label>
               <select value={endHour} onChange={e => setEndHour(Number(e.target.value))} style={selectStyle}>
                 {HOURS.filter(h => h.value > startHour).map(h => (
@@ -152,15 +163,15 @@ export default function SchedulePage() {
 
         {/* Upcoming pickups */}
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12 }}>
-            <Calendar size={14} style={{ display: 'inline', marginRight: 6, color: '#e91e8c' }} />
-            Upcoming Pickups (Next 14 Days)
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            <Calendar size={14} style={{ display: 'inline', marginRight: isRTL ? 0 : 6, marginLeft: isRTL ? 6 : 0, color: '#e91e8c' }} />
+            {t('orders', 'pickup')}
           </h3>
 
           {upcomingOrders.length === 0 ? (
             <div className="text-center py-8 rounded-2xl" style={{ background: '#f9f9f9' }}>
               <Calendar size={32} color="#ddd" className="mx-auto mb-2" />
-              <p style={{ fontSize: 13, color: '#9e9e9e' }}>No upcoming pickups scheduled</p>
+              <p style={{ fontSize: 13, color: '#9e9e9e' }}>{t('orders', 'no_date')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -169,7 +180,7 @@ export default function SchedulePage() {
                   key={order.id}
                   onClick={() => router.push(`/orders/${order.id}`)}
                   className="flex items-center gap-3 p-3 rounded-xl text-left w-full"
-                  style={{ background: '#f9f9f9', border: '1px solid #f0f0f0' }}
+                  style={{ background: '#f9f9f9', border: '1px solid #f0f0f0', flexDirection: isRTL ? 'row-reverse' : 'row' }}
                 >
                   <div className="px-3 py-2 rounded-xl flex-shrink-0"
                     style={{ background: 'linear-gradient(135deg, #e91e8c 0%, #f06292 100%)' }}>
@@ -181,10 +192,10 @@ export default function SchedulePage() {
                     </p>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a' }}>{order.garment_type}</p>
-                    <p style={{ fontSize: 11, color: '#9e9e9e' }}>{order.order_number}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', textAlign: isRTL ? 'right' : 'left' }}>{order.garment_type}</p>
+                    <p style={{ fontSize: 11, color: '#9e9e9e', textAlign: isRTL ? 'right' : 'left' }}>{order.order_number}</p>
                   </div>
-                  <ChevronRight size={14} color="#ccc" />
+                  <ChevronRight size={14} color="#ccc" style={{ transform: isRTL ? 'scaleX(-1)' : undefined }} />
                 </button>
               ))}
             </div>
@@ -201,7 +212,7 @@ export default function SchedulePage() {
           }}
         >
           <Save size={18} />
-          {saved ? 'Schedule Saved!' : 'Save Schedule'}
+          {saved ? t('schedule', 'saved') : t('schedule', 'save_schedule')}
         </button>
       </div>
 

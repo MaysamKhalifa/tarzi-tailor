@@ -4,8 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Mail, RefreshCw, CheckCircle } from 'lucide-react'
+import { useLanguage } from '@/lib/context/LanguageContext'
 
 export default function VerifyEmailPage() {
+  const { t, isRTL } = useLanguage()
   const [resending, setResending] = useState(false)
   const [resent, setResent] = useState(false)
   const [error, setError] = useState('')
@@ -33,11 +35,20 @@ export default function VerifyEmailPage() {
     else setResent(true)
   }
 
+  const steps = [
+    t('auth', 'check_sent'),
+    t('auth', 'open_gmail'),
+    t('auth', 'already_verified'),
+  ]
+
   return (
-    <div style={{
-      minHeight: '100dvh', maxWidth: 430, margin: '0 auto',
-      background: 'white', display: 'flex', flexDirection: 'column',
-    }}>
+    <div
+      dir={isRTL ? 'rtl' : 'ltr'}
+      style={{
+        minHeight: '100dvh', maxWidth: 430, margin: '0 auto',
+        background: 'white', display: 'flex', flexDirection: 'column',
+      }}
+    >
       {/* Pink top strip */}
       <div style={{
         background: 'linear-gradient(135deg, #e91e8c 0%, #f06292 100%)',
@@ -47,7 +58,7 @@ export default function VerifyEmailPage() {
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        padding: '40px 32px', textAlign: 'center',
+        padding: '40px 32px', textAlign: isRTL ? 'right' : 'center',
       }}>
         {/* Icon */}
         <div style={{
@@ -59,27 +70,34 @@ export default function VerifyEmailPage() {
           <Mail size={44} color="#e91e8c" />
         </div>
 
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', margin: '0 0 12px' }}>
-          Check your inbox
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', margin: '0 0 12px', textAlign: 'center' }}>
+          {t('auth', 'check_inbox')}
         </h1>
-        <p style={{ fontSize: 15, color: '#616161', lineHeight: 1.7, margin: '0 0 8px' }}>
-          We sent a verification link to your email address.
+        <p style={{ fontSize: 15, color: '#616161', lineHeight: 1.7, margin: '0 0 8px', textAlign: 'center' }}>
+          {t('auth', 'check_sent')}
         </p>
-        <p style={{ fontSize: 13, color: '#9e9e9e', lineHeight: 1.6, margin: '0 0 36px' }}>
-          Click the link in the email to verify your account and complete your tailor profile setup.
+        <p style={{ fontSize: 13, color: '#9e9e9e', lineHeight: 1.6, margin: '0 0 36px', textAlign: 'center' }}>
+          {t('auth', 'check_spam')}
         </p>
 
         {/* Steps hint */}
         <div style={{
           width: '100%', background: '#f9f9f9', borderRadius: 16,
-          padding: '20px', marginBottom: 32, textAlign: 'left',
+          padding: '20px', marginBottom: 32, textAlign: isRTL ? 'right' : 'left',
         }}>
           {[
-            { step: '1', text: 'Open the email from Tarzi' },
-            { step: '2', text: 'Click "Verify Email"' },
-            { step: '3', text: 'Complete your tailor profile' },
+            { step: '1', text: t('auth', 'check_sent') },
+            { step: '2', text: t('auth', 'open_gmail') },
+            { step: '3', text: t('auth', 'already_verified') },
           ].map(({ step, text }) => (
-            <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: step === '3' ? 0 : 14 }}>
+            <div
+              key={step}
+              style={{
+                display: 'flex', alignItems: 'center',
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                gap: 12, marginBottom: step === '3' ? 0 : 14,
+              }}
+            >
               <div style={{
                 width: 28, height: 28, borderRadius: '50%',
                 background: 'linear-gradient(135deg, #e91e8c, #f06292)',
@@ -98,11 +116,13 @@ export default function VerifyEmailPage() {
           <div style={{
             width: '100%', background: '#e8f5e9', borderRadius: 12,
             padding: '12px 16px', marginBottom: 16,
-            display: 'flex', alignItems: 'center', gap: 10,
+            display: 'flex', alignItems: 'center',
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            gap: 10,
           }}>
             <CheckCircle size={18} color="#2e7d32" />
             <span style={{ fontSize: 14, color: '#2e7d32', fontWeight: 600 }}>
-              Verification email resent!
+              {t('auth', 'resent_confirm')}
             </span>
           </div>
         )}
@@ -129,17 +149,17 @@ export default function VerifyEmailPage() {
             boxShadow: resent ? 'none' : '0 4px 14px rgba(233,30,140,0.25)',
           }}>
           {resending ? (
-            <><RefreshCw size={16} className="animate-spin" /> Sending...</>
+            <><RefreshCw size={16} className="animate-spin" /> {t('auth', 'resending')}</>
           ) : resent ? (
-            <><CheckCircle size={16} /> Email Sent!</>
+            <><CheckCircle size={16} /> {t('auth', 'resent')}</>
           ) : (
-            'Resend Verification Email'
+            t('auth', 'resend_btn')
           )}
         </button>
 
         <Link href="/login" style={{ fontSize: 14, color: '#9e9e9e', textDecoration: 'none' }}>
-          Already verified?{' '}
-          <span style={{ color: '#e91e8c', fontWeight: 700 }}>Sign In</span>
+          {t('auth', 'already_verified')}{' '}
+          <span style={{ color: '#e91e8c', fontWeight: 700 }}>{t('auth', 'go_login')}</span>
         </Link>
       </div>
     </div>

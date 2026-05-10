@@ -8,22 +8,28 @@ import {
   CheckCircle, XCircle, Package,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/context/LanguageContext'
 import PageHeader from '@/components/layout/PageHeader'
 import type { Order, Measurement, Profile } from '@/types/database'
 
-const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
-  pending:     { color: '#f57c00', bg: '#fff3e0', label: 'Pending' },
-  confirmed:   { color: '#1565c0', bg: '#e3f2fd', label: 'Confirmed' },
-  in_progress: { color: '#7b1fa2', bg: '#f3e5f5', label: 'In Progress' },
-  ready:       { color: '#2e7d32', bg: '#e8f5e9', label: 'Ready' },
-  delivered:   { color: '#2e7d32', bg: '#e8f5e9', label: 'Delivered' },
-  cancelled:   { color: '#d32f2f', bg: '#fff0f0', label: 'Cancelled' },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getStatusStyle(status: string, t: (s: 'orders', k: any) => string): { color: string; bg: string; label: string } {
+  const map: Record<string, { color: string; bg: string; labelKey: string }> = {
+    pending:     { color: '#f57c00', bg: '#fff3e0', labelKey: 'pending' },
+    confirmed:   { color: '#1565c0', bg: '#e3f2fd', labelKey: 'confirmed' },
+    in_progress: { color: '#7b1fa2', bg: '#f3e5f5', labelKey: 'in_progress' },
+    ready:       { color: '#2e7d32', bg: '#e8f5e9', labelKey: 'ready' },
+    delivered:   { color: '#2e7d32', bg: '#e8f5e9', labelKey: 'delivered' },
+    cancelled:   { color: '#d32f2f', bg: '#fff0f0', labelKey: 'cancelled' },
+  }
+  const entry = map[status] ?? map.pending
+  return { color: entry.color, bg: entry.bg, label: t('orders', entry.labelKey) }
 }
 
-function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function SectionCard({ title, icon, children, isRTL }: { title: string; icon: React.ReactNode; children: React.ReactNode; isRTL?: boolean }) {
   return (
     <div style={{ background: 'white', borderRadius: 16, padding: '16px', marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {icon}
         </div>
@@ -34,17 +40,17 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
   )
 }
 
-function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
+function InfoRow({ label, value, isRTL }: { label: string; value: string | null | undefined; isRTL?: boolean }) {
   if (!value) return null
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid #f5f5f5' }}>
-      <span style={{ fontSize: 12, color: '#9e9e9e', fontWeight: 600, minWidth: 120 }}>{label}</span>
-      <span style={{ fontSize: 13, color: '#1a1a1a', fontWeight: 500, textAlign: 'right', flex: 1, textTransform: 'capitalize' }}>{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid #f5f5f5', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+      <span style={{ fontSize: 12, color: '#9e9e9e', fontWeight: 600, minWidth: 120, textAlign: isRTL ? 'right' : 'left' }}>{label}</span>
+      <span style={{ fontSize: 13, color: '#1a1a1a', fontWeight: 500, textAlign: isRTL ? 'left' : 'right', flex: 1, textTransform: 'capitalize' }}>{value}</span>
     </div>
   )
 }
 
-function MeasurementGrid({ m }: { m: Measurement }) {
+function MeasurementGrid({ m, isRTL }: { m: Measurement; isRTL?: boolean }) {
   const fields: [string, number | null, string][] = [
     ['Chest', m.chest, 'cm'],
     ['Waist', m.waist, 'cm'],
@@ -61,20 +67,20 @@ function MeasurementGrid({ m }: { m: Measurement }) {
   if (active.length === 0) return <p style={{ fontSize: 13, color: '#9e9e9e' }}>No measurements recorded.</p>
   return (
     <div>
-      <div style={{ marginBottom: 10, padding: '8px 12px', background: '#f5f5f5', borderRadius: 8, display: 'flex', gap: 12 }}>
+      <div style={{ marginBottom: 10, padding: '8px 12px', background: '#f5f5f5', borderRadius: 8, display: 'flex', gap: 12, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: '#616161' }}>{m.name}</span>
         <span style={{ fontSize: 12, color: '#9e9e9e', textTransform: 'capitalize' }}>{m.gender}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
         {active.map(([label, val, unit]) => (
           <div key={label} style={{ background: '#fafafa', borderRadius: 8, padding: '8px 10px' }}>
-            <p style={{ fontSize: 10, color: '#9e9e9e', fontWeight: 600, marginBottom: 2 }}>{label}</p>
-            <p style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a' }}>{val} <span style={{ fontSize: 11, fontWeight: 500, color: '#9e9e9e' }}>{unit}</span></p>
+            <p style={{ fontSize: 10, color: '#9e9e9e', fontWeight: 600, marginBottom: 2, textAlign: isRTL ? 'right' : 'left' }}>{label}</p>
+            <p style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', textAlign: isRTL ? 'right' : 'left' }}>{val} <span style={{ fontSize: 11, fontWeight: 500, color: '#9e9e9e' }}>{unit}</span></p>
           </div>
         ))}
       </div>
       {m.notes && (
-        <p style={{ fontSize: 12, color: '#757575', marginTop: 10, fontStyle: 'italic' }}>Note: {m.notes}</p>
+        <p style={{ fontSize: 12, color: '#757575', marginTop: 10, fontStyle: 'italic', textAlign: isRTL ? 'right' : 'left' }}>Note: {m.notes}</p>
       )}
     </div>
   )
@@ -83,6 +89,7 @@ function MeasurementGrid({ m }: { m: Measurement }) {
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const { t, isRTL } = useLanguage()
   const [order, setOrder] = useState<Order | null>(null)
   const [customer, setCustomer] = useState<Profile | null>(null)
   const [measurement, setMeasurement] = useState<Measurement | null>(null)
@@ -132,12 +139,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
-        <PageHeader title="Order Details" />
+      <div dir={isRTL ? 'rtl' : undefined} style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
+        <PageHeader title={t('orders', 'order_details')} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ width: 36, height: 36, border: '3px solid #f8bbd9', borderTopColor: '#e91e8c', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
-            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>Loading order…</p>
+            <p style={{ fontSize: 13, color: '#9e9e9e', marginTop: 12 }}>{t('common', 'loading')}</p>
           </div>
           <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>
@@ -147,17 +154,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   if (!order) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }}>
-        <PageHeader title="Order Details" />
+      <div dir={isRTL ? 'rtl' : undefined} style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto' }}>
+        <PageHeader title={t('orders', 'order_details')} />
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <Package size={48} color="#e0e0e0" />
-          <p style={{ fontSize: 15, color: '#9e9e9e', marginTop: 12 }}>Order not found.</p>
+          <p style={{ fontSize: 15, color: '#9e9e9e', marginTop: 12 }}>{t('orders', 'no_orders')}</p>
         </div>
       </div>
     )
   }
 
-  const s = STATUS_STYLE[order.status] ?? STATUS_STYLE.pending
+  const s = getStatusStyle(order.status, t)
 
   const ServiceIconEl = order.service_type === 'alterations'
     ? <Scissors size={14} color="#e91e8c" />
@@ -166,8 +173,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     : <RefreshCw size={14} color="#e91e8c" />
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto', paddingBottom: 110 }}>
-      <PageHeader title="Order Details" subtitle={`#${order.order_number}`} />
+    <div dir={isRTL ? 'rtl' : undefined} style={{ minHeight: '100vh', background: '#f9f9f9', maxWidth: 430, margin: '0 auto', paddingBottom: 110 }}>
+      <PageHeader title={t('orders', 'order_details')} subtitle={`#${order.order_number}`} />
 
       <div style={{ padding: '16px 16px 0' }}>
         {/* Status badge */}
@@ -185,25 +192,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Order Info */}
-        <SectionCard title="Order Info" icon={ServiceIconEl}>
-          <InfoRow label="Service Type" value={order.service_type.replace('_', ' ')} />
-          <InfoRow label="Garment" value={order.garment_type} />
-          <InfoRow label="Order Number" value={`#${order.order_number}`} />
+        <SectionCard title={t('orders', 'order_details')} icon={ServiceIconEl} isRTL={isRTL}>
+          <InfoRow label={t('orders', 'service')} value={order.service_type.replace('_', ' ')} isRTL={isRTL} />
+          <InfoRow label={t('orders', 'garment')} value={order.garment_type} isRTL={isRTL} />
+          <InfoRow label={t('orders', 'order_num')} value={`#${order.order_number}`} isRTL={isRTL} />
           <InfoRow
-            label="Created"
+            label={t('common', 'view')}
             value={new Date(order.created_at).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}
+            isRTL={isRTL}
           />
           {order.tailor_price != null && (
-            <InfoRow label="Your Price" value={`AED ${order.tailor_price}`} />
+            <InfoRow label={t('orders', 'your_price')} value={`${t('common', 'aed')} ${order.tailor_price}`} isRTL={isRTL} />
           )}
           {order.tailor_note && (
-            <InfoRow label="Your Note" value={order.tailor_note} />
+            <InfoRow label={t('orders', 'your_note')} value={order.tailor_note} isRTL={isRTL} />
           )}
         </SectionCard>
 
         {/* Customer Details */}
-        <SectionCard title="Customer Details" icon={<User size={14} color="#e91e8c" />}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <SectionCard title={t('orders', 'customer')} icon={<User size={14} color="#e91e8c" />} isRTL={isRTL}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <div style={{
               width: 44,
               height: 44,
@@ -218,12 +226,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 {(customer?.full_name ?? 'C').charAt(0).toUpperCase()}
               </span>
             </div>
-            <div>
+            <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
               <p style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a' }}>
                 {customer?.full_name ?? 'Unknown Customer'}
               </p>
               {customer?.phone && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
                   <Phone size={11} color="#9e9e9e" />
                   <span style={{ fontSize: 12, color: '#757575' }}>{customer.phone}</span>
                 </div>
@@ -234,17 +242,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Measurements */}
         {order.measurement_id && (
-          <SectionCard title="Measurements" icon={<Ruler size={14} color="#e91e8c" />}>
+          <SectionCard title={t('orders', 'measurements')} icon={<Ruler size={14} color="#e91e8c" />} isRTL={isRTL}>
             {measurement
-              ? <MeasurementGrid m={measurement} />
-              : <p style={{ fontSize: 13, color: '#9e9e9e' }}>Loading measurements…</p>
+              ? <MeasurementGrid m={measurement} isRTL={isRTL} />
+              : <p style={{ fontSize: 13, color: '#9e9e9e' }}>{t('common', 'loading')}</p>
             }
           </SectionCard>
         )}
 
         {/* Garment Images */}
         {order.image_urls && order.image_urls.length > 0 && (
-          <SectionCard title="Garment Images" icon={<ImageIcon size={14} color="#e91e8c" />}>
+          <SectionCard title={t('orders', 'images')} icon={<ImageIcon size={14} color="#e91e8c" />} isRTL={isRTL}>
             <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
               {order.image_urls.map((url, i) => (
                 <img
@@ -267,9 +275,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Pickup & Delivery */}
         {(order.pickup_date || order.pickup_time || order.pickup_address) && (
-          <SectionCard title="Pickup & Delivery" icon={<Calendar size={14} color="#e91e8c" />}>
+          <SectionCard title={t('orders', 'pickup_details')} icon={<Calendar size={14} color="#e91e8c" />} isRTL={isRTL}>
             {order.pickup_date && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
                 <Calendar size={14} color="#9e9e9e" />
                 <span style={{ fontSize: 13, color: '#1a1a1a' }}>
                   {new Date(order.pickup_date + 'T00:00:00').toLocaleDateString('en-AE', { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -277,13 +285,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
             {order.pickup_time && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
                 <Clock size={14} color="#9e9e9e" />
                 <span style={{ fontSize: 13, color: '#1a1a1a' }}>{order.pickup_time}</span>
               </div>
             )}
             {order.pickup_address && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
                 <MapPin size={14} color="#9e9e9e" style={{ marginTop: 2 }} />
                 <span style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.4 }}>{order.pickup_address}</span>
               </div>
@@ -293,8 +301,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Notes from Customer */}
         {order.comments && (
-          <SectionCard title="Notes from Customer" icon={<FileText size={14} color="#e91e8c" />}>
-            <p style={{ fontSize: 13, color: '#424242', lineHeight: 1.6, fontStyle: 'italic' }}>
+          <SectionCard title={t('orders', 'comments')} icon={<FileText size={14} color="#e91e8c" />} isRTL={isRTL}>
+            <p style={{ fontSize: 13, color: '#424242', lineHeight: 1.6, fontStyle: 'italic', textAlign: isRTL ? 'right' : 'left' }}>
               &ldquo;{order.comments}&rdquo;
             </p>
           </SectionCard>
@@ -302,8 +310,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Decline reason */}
         {order.status === 'cancelled' && order.decline_reason && (
-          <SectionCard title="Decline Reason" icon={<XCircle size={14} color="#d32f2f" />}>
-            <p style={{ fontSize: 13, color: '#d32f2f' }}>{order.decline_reason}</p>
+          <SectionCard title={t('orders', 'decline_reason')} icon={<XCircle size={14} color="#d32f2f" />} isRTL={isRTL}>
+            <p style={{ fontSize: 13, color: '#d32f2f', textAlign: isRTL ? 'right' : 'left' }}>{order.decline_reason}</p>
           </SectionCard>
         )}
       </div>
@@ -323,7 +331,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         zIndex: 40,
       }}>
         {order.status === 'pending' && (
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <button
               onClick={() => router.push(`/orders/${order.id}/respond?action=decline`)}
               style={{
@@ -340,10 +348,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <XCircle size={16} />
-              Decline
+              {t('orders', 'decline')}
             </button>
             <button
               onClick={() => router.push(`/orders/${order.id}/respond`)}
@@ -361,16 +370,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <CheckCircle size={16} />
-              Accept Order
+              {t('orders', 'accept_order')}
             </button>
           </div>
         )}
 
         {(order.status === 'confirmed' || order.status === 'in_progress') && (
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <button
               onClick={() => router.push(`/chat/${order.id}`)}
               style={{
@@ -387,10 +397,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <MessageCircle size={16} />
-              Chat
+              {t('orders', 'chat')}
             </button>
             <button
               onClick={() => updateStatus('ready')}
@@ -409,16 +420,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <CheckCircle size={16} />
-              {updating ? 'Updating…' : 'Mark as Ready'}
+              {updating ? t('common', 'loading') : t('orders', 'mark_ready')}
             </button>
           </div>
         )}
 
         {order.status === 'ready' && (
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
             <button
               onClick={() => router.push(`/chat/${order.id}`)}
               style={{
@@ -435,10 +447,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <MessageCircle size={16} />
-              Chat
+              {t('orders', 'chat')}
             </button>
             <button
               onClick={() => updateStatus('delivered')}
@@ -457,10 +470,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
               }}
             >
               <CheckCircle size={16} />
-              {updating ? 'Updating…' : 'Mark Delivered'}
+              {updating ? t('common', 'loading') : t('orders', 'mark_delivered')}
             </button>
           </div>
         )}

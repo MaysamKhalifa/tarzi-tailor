@@ -19,6 +19,7 @@ export default function VerifyEmailPage() {
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session?.user?.email) {
+      console.error('[verify-email] No session/email found when attempting resend')
       setError('Could not find your email. Please try signing up again.')
       setResending(false)
       return
@@ -31,8 +32,12 @@ export default function VerifyEmailPage() {
     })
 
     setResending(false)
-    if (err) setError(err.message)
-    else setResent(true)
+    if (err) {
+      console.error('[verify-email] resend failed:', err.status, err.message)
+      setError(err.message)
+    } else {
+      setResent(true)
+    }
   }
 
   const steps = [

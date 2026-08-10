@@ -61,18 +61,21 @@ export default function SignupPage() {
       })
 
       if (authError) {
+        console.error('[signup] auth.signUp failed:', authError.status, authError.message)
         setError(authError.message)
         setLoading(false)
         return
       }
 
       if (!data.user) {
+        console.error('[signup] auth.signUp returned no user')
         setError('Could not create account. Please try again.')
         setLoading(false)
         return
       }
 
       if (data.session) {
+        console.warn('[signup] Session returned on signUp — email confirmation is disabled in Supabase Auth settings, no verification email was sent.')
         await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: fullName.trim(),
@@ -81,10 +84,12 @@ export default function SignupPage() {
         }, { onConflict: 'id' })
         window.location.href = '/onboarding'
       } else {
+        console.info('[signup] No session on signUp — Supabase should be sending a confirmation email to', email.trim())
         window.location.href = '/verify-email'
       }
 
-    } catch {
+    } catch (err) {
+      console.error('[signup] Unexpected error during signup:', err)
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }

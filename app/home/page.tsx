@@ -164,26 +164,42 @@ export default function HomePage() {
       }}
     >
       {/* ── Pending approval banner ── */}
-      {profile && !profile.is_approved && (
-        <div style={{
-          background: '#fff8e1',
-          borderBottom: '1px solid #ffe082',
-          padding: '10px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <span style={{ fontSize: 18 }}>⏳</span>
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#f57c00', margin: 0 }}>
-              Account Pending Approval
-            </p>
-            <p style={{ fontSize: 11, color: '#795548', margin: 0 }}>
-              You won&apos;t appear in customer searches until an admin approves your profile.
-            </p>
+      {profile && !profile.is_approved && (() => {
+        const status = (profile as { approval_status?: string }).approval_status ?? 'pending'
+        if (status === 'needs_info') return (
+          <div style={{ background: '#e3f2fd', borderBottom: '1px solid #90caf9', padding: '10px 20px', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>💬</span>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#1565c0', margin: 0 }}>More Information Required</p>
+              <p style={{ fontSize: 11, color: '#37474f', margin: '2px 0 0' }}>
+                {(profile as { approval_notes?: string }).approval_notes || 'The admin needs more information from you. Check your email or contact support.'}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )
+        if (status === 'rejected') return (
+          <div style={{ background: '#ffebee', borderBottom: '1px solid #ef9a9a', padding: '10px 20px', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🚫</span>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#c62828', margin: 0 }}>Application Not Approved</p>
+              <p style={{ fontSize: 11, color: '#4e342e', margin: '2px 0 0' }}>
+                {(profile as { approval_notes?: string }).approval_notes || 'Your application was not approved. Contact support for details.'}
+              </p>
+            </div>
+          </div>
+        )
+        return (
+          <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>⏳</span>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#f57c00', margin: 0 }}>Account Pending Approval</p>
+              <p style={{ fontSize: 11, color: '#795548', margin: 0 }}>
+                You won&apos;t appear in customer searches until an admin approves your profile.
+              </p>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Pink gradient header ── */}
       <div

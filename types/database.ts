@@ -23,8 +23,18 @@ export interface Profile {
   onboarding_complete: boolean
   // admin approval
   is_approved: boolean
+  approval_status: 'pending' | 'approved' | 'rejected' | 'needs_info'
+  approval_notes: string | null
   // notification preferences
   notification_preferences: Record<string, boolean> | null
+  created_at: string
+}
+
+export interface TailorService {
+  id: string
+  tailor_id: string
+  service_type: 'alterations' | 'from_scratch' | 'upcycling'
+  price_from: number
   created_at: string
 }
 

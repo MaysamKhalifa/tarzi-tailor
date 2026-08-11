@@ -24,9 +24,11 @@ export default function LoginPage() {
   useEffect(() => {
     const search = window.location.search
     const hash   = window.location.hash
-    const code   = new URLSearchParams(search).get('code')
+    const params = new URLSearchParams(search)
+    const code   = params.get('code')
+    const tokenHash = params.get('token_hash')
     const hasHashToken = hash.includes('access_token=')
-    if (code || hasHashToken) {
+    if (code || tokenHash || hasHashToken || params.get('error')) {
       router.replace(`/auth/callback${search}${hash}`)
     }
   }, [router])
@@ -50,7 +52,11 @@ export default function LoginPage() {
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     setResending(false)
-    if (!err) setResent(true)
+    if (err) {
+      console.error('[login] resend failed:', err.status, err.message)
+    } else {
+      setResent(true)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,7 +73,8 @@ export default function LoginPage() {
     })
 
     if (authError) {
-      if (authError.message.toLowerCase().includes('email not confirmed') ||
+      console.error('[login] signInWithPassword failed:', authError.status, authError.code, authError.message)
+      if (authError.code === 'email_not_confirmed' ||
           authError.message.toLowerCase().includes('not confirmed')) {
         setUnverified(true)
       } else {

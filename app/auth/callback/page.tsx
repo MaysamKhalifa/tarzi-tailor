@@ -30,13 +30,36 @@ export default function AuthCallbackPage() {
           return
         }
 
+        // ── Preferred flow: token_hash + type ──────────────────────
+        // This is Supabase's recommended email-confirmation link format.
+        // It's verified statelessly, so it works even if this link is
+        // opened in a different browser/device/tab than the one used to
+        // sign up — unlike the PKCE code flow below, which requires a
+        // matching code-verifier that was saved in *this* browser's
+        // storage at signup time (and silently fails otherwise).
+        const tokenHash = url.searchParams.get('token_hash')
+        const otpType = url.searchParams.get('type') as
+          | 'signup' | 'email' | 'recovery' | 'invite' | 'magiclink' | 'email_change' | null
+        if (tokenHash && otpType) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({ type: otpType, token_hash: tokenHash })
+          if (verifyError) {
+            console.error('[auth/callback] verifyOtp failed:', verifyError.status, verifyError.code, verifyError.message)
+            setStatus('error')
+            setMessage(verifyError.message)
+            return
+          }
+        }
+
         // ── PKCE flow: exchange code for session ──────────────────
         const code = url.searchParams.get('code')
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) {
-            // Code may already be used — try getSession anyway
-            console.warn('Code exchange warning:', exchangeError.message)
+            // Code may already be used, or the verifier from the original
+            // signup browser isn't present in this one — try getSession
+            // below anyway in case the token_hash branch above already
+            // established a session.
+            console.error('[auth/callback] Code exchange failed:', exchangeError.status, exchangeError.code, exchangeError.message)
           }
         }
 
@@ -53,10 +76,16 @@ export default function AuthCallbackPage() {
         }
 
         if (!session) {
+          console.error('[auth/callback] No session established after verification attempt for url:', window.location.href)
           setStatus('error')
           setMessage('Could not verify your session. Please try logging in.')
           return
         }
+
+        console.info(
+          '[auth/callback] Session established for', session.user.email,
+          '— email_confirmed_at:', session.user.email_confirmed_at
+        )
 
         // ── Success — update profile role just in case ────────────
         await supabase.from('profiles').upsert({

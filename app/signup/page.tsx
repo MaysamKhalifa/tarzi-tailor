@@ -85,7 +85,7 @@ export default function SignupPage() {
         window.location.href = '/onboarding'
       } else {
         console.info('[signup] No session on signUp — Supabase should be sending a confirmation email to', email.trim())
-        window.location.href = '/verify-email'
+        window.location.href = `/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`
       }
 
     } catch (err) {

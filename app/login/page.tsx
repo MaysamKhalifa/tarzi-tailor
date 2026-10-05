@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Mail } from 'lucide-react'
+import { Loader2, Mail, ShieldCheck } from 'lucide-react'
 import { useLanguage } from '@/lib/context/LanguageContext'
 import type { Language } from '@/lib/i18n'
 
@@ -19,6 +19,9 @@ export default function LoginPage() {
   const [unverified, setUnverified] = useState(false)
   const [resending, setResending]   = useState(false)
   const [resent, setResent]         = useState(false)
+  const [code, setCode]             = useState('')
+  const [verifyingCode, setVerifyingCode] = useState(false)
+  const [codeError, setCodeError]   = useState('')
 
   // ── Forward any Supabase auth tokens to the callback handler ──────────────
   useEffect(() => {
@@ -57,6 +60,53 @@ export default function LoginPage() {
     } else {
       setResent(true)
     }
+  }
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (code.trim().length !== 6) { setCodeError(t('auth', 'err_code_length')); return }
+    setVerifyingCode(true)
+    setCodeError('')
+
+    const supabase = createClient()
+    const { data, error: verifyErr } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: code.trim(),
+      type: 'signup',
+    })
+
+    if (verifyErr) {
+      console.error('[login] verifyOtp failed:', verifyErr.status, verifyErr.message)
+      setCodeError(verifyErr.message)
+      setVerifyingCode(false)
+      return
+    }
+
+    const user = data.user
+    if (!user) {
+      setCodeError('Could not verify your account. Please try again.')
+      setVerifyingCode(false)
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, onboarding_complete')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile) {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        full_name: user.user_metadata?.full_name || '',
+        phone: user.user_metadata?.phone || null,
+        role: 'tailor',
+      }, { onConflict: 'id' })
+      window.location.href = '/onboarding'
+      return
+    }
+
+    window.location.href = profile.onboarding_complete ? '/home' : '/onboarding'
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,7 +236,7 @@ export default function LoginPage() {
 
           <button onClick={handleResend} disabled={resending || resent}
             style={{
-              width: '100%', padding: '14px', borderRadius: 14, border: 'none', marginBottom: 14,
+              width: '100%', padding: '14px', borderRadius: 14, border: 'none', marginBottom: 20,
               background: resent ? '#e8f5e9' : 'linear-gradient(135deg, #e91e8c, #f06292)',
               color: resent ? '#2e7d32' : 'white',
               fontSize: 15, fontWeight: 700, cursor: resending ? 'not-allowed' : 'pointer',
@@ -198,6 +248,43 @@ export default function LoginPage() {
               ? t('auth', 'resent')
               : t('auth', 'resend_verify')}
           </button>
+
+          <form onSubmit={handleVerifyCode} style={{ width: '100%' }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#555', display: 'block', marginBottom: 6, textAlign: 'left' }}>
+              {t('auth', 'verify_code_label')}
+            </label>
+            <div style={{ position: 'relative', marginBottom: 14 }}>
+              <input
+                type="text" inputMode="numeric" maxLength={6} value={code}
+                onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
+                placeholder={t('auth', 'verify_code_placeholder')}
+                style={{
+                  width: '100%', padding: '14px 14px 14px 44px', borderRadius: 14,
+                  border: '1.5px solid #e8e8e8', background: '#fafafa', fontSize: 16,
+                  textAlign: 'center', letterSpacing: 6, fontWeight: 700, outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={e => e.target.style.borderColor = '#e91e8c'} onBlur={e => e.target.style.borderColor = '#e8e8e8'}
+              />
+              <ShieldCheck size={18} color="#9e9e9e" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+            </div>
+
+            {codeError && (
+              <div style={{ width: '100%', background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>
+                {codeError}
+              </div>
+            )}
+
+            <button type="submit" disabled={verifyingCode}
+              style={{
+                width: '100%', padding: '14px', borderRadius: 14, border: '1.5px solid #e91e8c',
+                background: 'white', color: '#e91e8c',
+                fontSize: 15, fontWeight: 700, cursor: verifyingCode ? 'not-allowed' : 'pointer',
+                marginBottom: 14,
+              }}>
+              {verifyingCode ? t('auth', 'verifying_code') : t('auth', 'verify_btn')}
+            </button>
+          </form>
 
           <button onClick={() => setUnverified(false)}
             style={{ background: 'none', border: 'none', color: '#9e9e9e', fontSize: 14, cursor: 'pointer' }}>
@@ -270,6 +357,12 @@ export default function LoginPage() {
             <input type="password" placeholder="••••••••" value={password}
               onChange={e => setPassword(e.target.value)} onFocus={onFocus} onBlur={onBlur}
               style={inputStyle} required autoComplete="current-password" />
+          </div>
+
+          <div style={{ textAlign: isRTL ? 'left' : 'right' }}>
+            <Link href="/forgot-password" style={{ fontSize: 13, color: '#e91e8c', fontWeight: 600, textDecoration: 'none' }}>
+              {t('auth', 'forgot_password')}
+            </Link>
           </div>
 
           <button type="submit" disabled={loading} style={{

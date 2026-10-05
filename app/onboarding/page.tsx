@@ -98,7 +98,7 @@ export default function OnboardingPage() {
   // ── Get current user ──────────────────────────────────────────────────────
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) {
         router.replace('/login')
         return
@@ -108,9 +108,19 @@ export default function OnboardingPage() {
       const metaPhone = u.user_metadata?.phone || ''
       const metaName = u.user_metadata?.full_name || ''
       setForm(prev => ({ ...prev, phone: metaPhone, ownerName: metaName }))
-      supabase.from('profiles').upsert({
+
+      // Only set role on first-time profile creation — never overwrite an
+      // existing profile's role (e.g. an admin landing here would otherwise
+      // get silently downgraded back to 'tailor').
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', u.id)
+        .maybeSingle()
+
+      await supabase.from('profiles').upsert({
         id: u.id,
-        role: 'tailor',
+        ...(existingProfile ? {} : { role: 'tailor' }),
         full_name: metaName || null,
         phone: metaPhone || null,
       }, { onConflict: 'id' })
@@ -220,6 +230,15 @@ export default function OnboardingPage() {
 
     const supabase = createClient()
 
+    // Only set role on first-time profile creation — never overwrite an
+    // existing profile's role (e.g. an admin completing onboarding again
+    // would otherwise get silently downgraded back to 'tailor').
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle()
+
     // 1. Update profile
     const { error: profileErr } = await supabase.from('profiles').upsert({
       id: userId,
@@ -232,7 +251,7 @@ export default function OnboardingPage() {
       availability: form.availability,
       permit_url: permitUrl || null,
       onboarding_complete: true,
-      role: 'tailor',
+      ...(existingProfile ? {} : { role: 'tailor' }),
     }, { onConflict: 'id' })
 
     if (profileErr) {

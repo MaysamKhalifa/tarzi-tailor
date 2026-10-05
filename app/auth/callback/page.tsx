@@ -87,20 +87,23 @@ export default function AuthCallbackPage() {
           '— email_confirmed_at:', session.user.email_confirmed_at
         )
 
-        // ── Success — update profile role just in case ────────────
+        // ── Check existing profile (and fetch onboarding status) ───
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, onboarding_complete')
+          .eq('id', session.user.id)
+          .maybeSingle()
+
+        // ── Success — ensure profile exists. Only set role on
+        // first-time creation; never overwrite an existing profile's
+        // role (e.g. an admin re-confirming an email would otherwise
+        // get silently downgraded back to 'tailor').
         await supabase.from('profiles').upsert({
           id: session.user.id,
-          role: 'tailor',
+          ...(profile ? {} : { role: 'tailor' }),
           full_name: session.user.user_metadata?.full_name || '',
           phone: session.user.user_metadata?.phone || null,
         }, { onConflict: 'id' })
-
-        // ── Check onboarding ──────────────────────────────────────
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_complete')
-          .eq('id', session.user.id)
-          .single()
 
         setStatus('success')
 

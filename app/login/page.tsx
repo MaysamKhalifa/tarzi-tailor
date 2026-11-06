@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Mail, ShieldCheck } from 'lucide-react'
+import { Loader2, Mail, ShieldCheck, Scissors } from 'lucide-react'
 import { useLanguage } from '@/lib/context/LanguageContext'
 import type { Language } from '@/lib/i18n'
 
@@ -308,9 +308,12 @@ export default function LoginPage() {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
       }}>
         <div style={{
-          width: 72, height: 72, background: 'rgba(255,255,255,0.2)',
-          borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36,
-        }}>✂️</div>
+          width: 72, height: 72, background: 'white',
+          borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 8px 30px rgba(233,30,140,0.3)',
+        }}>
+          <Scissors size={36} color="#e91e8c" strokeWidth={1.8} />
+        </div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'white', margin: 0, textAlign: 'center' }}>
           Tarzi Tailor Portal
         </h1>

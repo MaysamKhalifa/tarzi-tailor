@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Scissors } from 'lucide-react'
 import { useLanguage } from '@/lib/context/LanguageContext'
 import type { Language } from '@/lib/i18n'
 
@@ -40,7 +40,8 @@ export default function SignupPage() {
 
     if (!fullName.trim()) { setError(t('onboarding', 'err_name')); return }
     if (!phone.trim())    { setError(t('onboarding', 'err_phone')); return }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
+    if (password.length < 8) { setError(t('auth', 'err_password_length')); return }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(password)) { setError(t('auth', 'err_password_weak')); return }
 
     setLoading(true)
 
@@ -75,7 +76,7 @@ export default function SignupPage() {
       }
 
       if (data.session) {
-        console.warn('[signup] Session returned on signUp — email confirmation is disabled in Supabase Auth settings, no verification email was sent.')
+        console.warn('[signup] Session returned on signUp — unexpected since email confirmation is enabled in Supabase Auth settings; no verification email was needed for this account.')
         await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: fullName.trim(),
@@ -133,10 +134,12 @@ export default function SignupPage() {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
       }}>
         <div style={{
-          width: 72, height: 72, background: 'rgba(255,255,255,0.2)',
+          width: 72, height: 72, background: 'white',
           borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 36, marginBottom: 4,
-        }}>✂️</div>
+          marginBottom: 4, boxShadow: '0 8px 30px rgba(233,30,140,0.3)',
+        }}>
+          <Scissors size={36} color="#e91e8c" strokeWidth={1.8} />
+        </div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'white', margin: 0, textAlign: 'center' }}>
           {t('auth', 'signup_title')}
         </h1>
@@ -193,9 +196,12 @@ export default function SignupPage() {
             <label style={{ fontSize: 13, fontWeight: 600, color: '#3a3a3a', textAlign: isRTL ? 'right' : 'left' }}>
               {t('auth', 'password')} <span style={{ color: '#e91e8c' }}>*</span>
             </label>
-            <input type="password" placeholder="Min. 6 characters" value={password}
+            <input type="password" placeholder="8+ chars, upper, lower, number & symbol" value={password}
               onChange={e => setPassword(e.target.value)} onFocus={onFocus} onBlur={onBlur}
               style={inputStyle} required autoComplete="new-password" />
+            <p style={{ fontSize: 11, color: '#9e9e9e', margin: 0, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('auth', 'password_hint')}
+            </p>
           </div>
 
           {/* Phone */}
